@@ -1,4 +1,13 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === "production" ? "/_/backend" : "http://localhost:8000");
+const getApiUrl = () => {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (envUrl && envUrl !== "" && envUrl !== "/") return envUrl;
+  return process.env.NODE_ENV === "production" ? "/_/backend" : "http://localhost:8000";
+};
+
+const API_URL = getApiUrl();
+if (typeof window !== "undefined") {
+  console.log("Invoice Agent API URL:", API_URL);
+}
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
