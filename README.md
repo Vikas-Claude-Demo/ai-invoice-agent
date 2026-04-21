@@ -71,19 +71,16 @@ graph TD
 
 ## ☁️ Deployment on Vercel
 
-This project is optimized for deployment on Vercel.
-
-### Frontend Deployment
+This project is configured for multi-service deployment on Vercel using `experimentalServices`.
 
 1. Push your code to GitHub.
 2. Go to [Vercel Dashboard](https://vercel.com).
-3. Import the repository and select the `frontend` folder as the **Root Directory**.
-4. Configure Environment Variables (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, etc.).
+3. Import the repository. Vercel will automatically detect the `vercel.json` configuration in the root.
+4. Configure Environment Variables for both frontend and backend in the Vercel project settings.
 5. Click **Deploy**.
 
-### Backend Deployment (Optional)
+The frontend will be available at the root (`/`) and the backend will be available under `/_/backend`.
 
-The backend can be deployed as a separate Vercel project using the Python runtime or hosted on a platform like Render/Railway. If using Vercel, ensure the `backend` directory contains a valid `vercel.json` if you wish to run it as serverless functions.
 
 ## 📄 License
 
