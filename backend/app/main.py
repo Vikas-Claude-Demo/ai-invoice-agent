@@ -12,11 +12,16 @@ scheduler = AsyncIOScheduler()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from app.services.gmail_poller import poll_gmail_for_invoices
-    scheduler.add_job(poll_gmail_for_invoices, "interval", minutes=5, id="gmail_poll")
-    scheduler.start()
+    if not os.environ.get("VERCEL"):
+        from app.services.gmail_poller import poll_gmail_for_invoices
+        scheduler.add_job(poll_gmail_for_invoices, "interval", minutes=5, id="gmail_poll")
+        scheduler.start()
+        print("Scheduler started")
+    else:
+        print("Running on Vercel: Scheduler disabled")
     yield
-    scheduler.shutdown()
+    if scheduler.running:
+        scheduler.shutdown()
 
 
 app = FastAPI(title="Invoice Processing Agent API", version="1.0.0", lifespan=lifespan)
