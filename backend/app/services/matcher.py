@@ -1,0 +1,125 @@
+from typing import Optional
+from app.core.supabase import get_supabase
+from app.models.schemas import MatchStatus
+
+AMOUNT_TOLERANCE = 0.02  # 2% tolerance
+
+
+async def run_matching(invoice_id: str) -> dict:
+    db = get_supabase()
+
+    invoice_res = db.table("invoices").select("*").eq("id", invoice_id).single().execute()
+    invoice = invoice_res.data
+
+    if not invoice:
+        return {"status": "error", "message": "Invoice not found"}
+
+    extracted = invoice.get("extracted_data", {})
+    po_number = extracted.get("po_number") or invoice.get("po_number")
+    invoice_total = extracted.get("total") or 0
+
+    if not po_number:
+        await _flag_exception(invoice_id, "No PO number found on invoice")
+        return {"status": "exception", "reason": "no_po_number"}
+
+    po_res = db.table("purchase_orders").select("*").eq("po_number", po_number).execute()
+    if not po_res.data:
+        await _flag_exception(invoice_id, f"PO number {po_number} not found in system")
+        return {"status": "exception", "reason": "po_not_found"}
+
+    po = po_res.data[0]
+
+    grn_res = db.table("grns").select("*").eq("po_id", po["id"]).execute()
+    grns = grn_res.data or []
+
+    if not grns:
+        await _flag_exception(invoice_id, f"No GRN found for PO {po_number}")
+        _update_invoice_status(invoice_id, "exception")
+        return {"status": "exception", "reason": "no_grn"}
+
+    po_amount = float(po.get("total_amount", 0))
+    variance = abs(invoice_total - po_amount) / po_amount if po_amount > 0 else 1
+
+    grn_id = grns[0]["id"]
+
+    if variance > AMOUNT_TOLERANCE:
+        reason = f"Amount variance {variance:.1%} exceeds {AMOUNT_TOLERANCE:.0%} tolerance. Invoice: {invoice_total}, PO: {po_amount}"
+        await _flag_exception(invoice_id, reason)
+        db.table("invoice_matches").insert({
+            "invoice_id": invoice_id,
+            "grn_id": grn_id,
+            "po_id": po["id"],
+            "match_score": round(1 - variance, 3),
+            "match_status": MatchStatus.exception,
+        }).execute()
+        return {"status": "exception", "reason": "amount_variance", "variance": variance}
+
+    dup_res = db.table("invoices").select("id").eq("invoice_number", invoice.get("invoice_number")).neq("id", invoice_id).execute()
+    if dup_res.data:
+        await _flag_exception(invoice_id, "Duplicate invoice number detected")
+        return {"status": "exception", "reason": "duplicate_invoice"}
+
+    db.table("invoice_matches").insert({
+        "invoice_id": invoice_id,
+        "grn_id": grn_id,
+        "po_id": po["id"],
+        "match_score": round(1 - variance, 3),
+        "match_status": MatchStatus.auto_matched,
+    }).execute()
+
+    _update_invoice_status(invoice_id, "matched")
+    await _post_to_erp(invoice_id, po, invoice, extracted)
+
+    return {"status": "matched", "po_id": po["id"], "grn_id": grn_id}
+
+
+async def _flag_exception(invoice_id: str, reason: str):
+    db = get_supabase()
+    db.table("exceptions").insert({
+        "invoice_id": invoice_id,
+        "reason": reason,
+        "status": "open",
+    }).execute()
+    _update_invoice_status(invoice_id, "exception")
+    await _notify_ap_team(invoice_id, reason)
+
+
+def _update_invoice_status(invoice_id: str, status: str):
+    db = get_supabase()
+    db.table("invoices").update({"status": status}).eq("id", invoice_id).execute()
+
+
+async def _notify_ap_team(invoice_id: str, reason: str):
+    db = get_supabase()
+    users_res = db.table("users").select("id").in_("role", ["admin", "manager", "ap_clerk"]).execute()
+    users = users_res.data or []
+    notifications = [
+        {
+            "user_id": u["id"],
+            "message": f"Invoice exception: {reason}",
+            "type": "exception",
+            "invoice_id": invoice_id,
+            "read": False,
+        }
+        for u in users
+    ]
+    if notifications:
+        db.table("notifications").insert(notifications).execute()
+
+
+async def _post_to_erp(invoice_id: str, po: dict, invoice: dict, extracted: dict):
+    db = get_supabase()
+    journal_entry = {
+        "debit_account": "Expense/Asset",
+        "credit_account": "Accounts Payable",
+        "amount": extracted.get("total", 0),
+        "description": f"Invoice {invoice.get('invoice_number')} from PO {po.get('po_number')}",
+        "vendor_id": invoice.get("vendor_id"),
+        "po_id": po.get("id"),
+    }
+    db.table("erp_entries").insert({
+        "invoice_id": invoice_id,
+        "journal_entry": journal_entry,
+        "status": "posted",
+    }).execute()
+    _update_invoice_status(invoice_id, "posted")

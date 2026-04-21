@@ -1,0 +1,91 @@
+"use client";
+
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import Header from "@/components/layout/header";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Mail, CheckCircle, RefreshCw, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
+import { useSearchParams } from "next/navigation";
+import { useEffect, Suspense } from "react";
+
+function GmailIntegration() {
+  const searchParams = useSearchParams();
+
+  const { data: status, refetch } = useQuery({
+    queryKey: ["gmail-status"],
+    queryFn: api.gmail.status,
+  });
+
+  const poll = useMutation({
+    mutationFn: api.gmail.poll,
+    onSuccess: () => { toast.success("Gmail poll triggered — invoices will appear shortly"); refetch(); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  useEffect(() => {
+    if (searchParams.get("gmail") === "connected") {
+      toast.success("Gmail connected successfully!");
+      refetch();
+    }
+  }, [searchParams, refetch]);
+
+  async function handleConnect() {
+    const res = await api.gmail.connect();
+    if (res.auth_url) window.location.href = res.auth_url;
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Mail className="h-5 w-5" />
+          Gmail Integration
+        </CardTitle>
+        <CardDescription>Connect Gmail to automatically fetch invoice emails</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-600">Status:</span>
+          {status?.connected ? (
+            <Badge className="bg-green-100 text-green-700 border-0 gap-1">
+              <CheckCircle className="h-3 w-3" /> Connected
+            </Badge>
+          ) : (
+            <Badge className="bg-gray-100 text-gray-600 border-0">Not connected</Badge>
+          )}
+        </div>
+        <div className="flex gap-2">
+          {!status?.connected ? (
+            <Button onClick={handleConnect} className="gap-1">
+              <ExternalLink className="h-4 w-4" /> Connect Gmail
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={() => poll.mutate()} disabled={poll.isPending} className="gap-1">
+              <RefreshCw className={`h-4 w-4 ${poll.isPending ? "animate-spin" : ""}`} />
+              {poll.isPending ? "Polling..." : "Poll Now"}
+            </Button>
+          )}
+        </div>
+        <p className="text-xs text-gray-400">
+          When connected, Gmail is polled every 5 minutes for new invoice emails with PDF/image attachments.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <div className="flex flex-col flex-1">
+      <Header title="Settings" />
+      <div className="p-6 max-w-2xl space-y-4">
+        <Suspense fallback={<div className="h-40 bg-gray-100 rounded-lg animate-pulse" />}>
+          <GmailIntegration />
+        </Suspense>
+      </div>
+    </div>
+  );
+}

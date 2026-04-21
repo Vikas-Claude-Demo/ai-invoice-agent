@@ -1,0 +1,41 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from contextlib import asynccontextmanager
+
+from app.core.config import settings
+from app.api import invoices, exceptions, erp, gmail, notifications
+
+
+scheduler = AsyncIOScheduler()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    from app.services.gmail_poller import poll_gmail_for_invoices
+    scheduler.add_job(poll_gmail_for_invoices, "interval", minutes=5, id="gmail_poll")
+    scheduler.start()
+    yield
+    scheduler.shutdown()
+
+
+app = FastAPI(title="Invoice Processing Agent API", version="1.0.0", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[settings.frontend_url, "http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(invoices.router)
+app.include_router(exceptions.router)
+app.include_router(erp.router)
+app.include_router(gmail.router)
+app.include_router(notifications.router)
+
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}

@@ -1,0 +1,20 @@
+# AI Invoice Processing Agent
+
+High-performance automation system for Accounts Payable.
+
+## Project Structure
+- `frontend/`: Next.js 14 application with the live ingestion dashboard and UI.
+- `backend/`: Python (FastAPI) service for AI extraction, PO matching, and Gmail polling.
+- `supabase_schema.sql`: Database schema for Supabase/PostgreSQL.
+
+## Key APIs
+- **Frontend**: `http://localhost:3000`
+- **Backend API**: `http://localhost:8000`
+- **Health Check**: `GET /health`
+
+## Deployment
+- **Frontend**: Optimized for Vercel.
+- **Backend**: Can be deployed on any Python host (FastAPI).
+
+## Tech Stack
+Next.js, TailwindCSS, TypeScript, Python, FastAPI, Supabase, Google Gemini API.
