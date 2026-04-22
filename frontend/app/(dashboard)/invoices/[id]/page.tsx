@@ -10,21 +10,23 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, ExternalLink, AlertTriangle, Save, Brain, Sparkles, CheckCircle, RotateCcw } from "lucide-react";
+import { ArrowLeft, ExternalLink, AlertTriangle, Save, Brain, Sparkles, CheckCircle, RotateCcw, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { use, useState, useEffect } from "react";
 import { toast } from "sonner";
 
 export default function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+  const resolvedParams = use(params);
+  const id = resolvedParams?.id;
+  
   const qc = useQueryClient();
-  const [isEditing, setIsEditing] = useState(false);
   const [learnFromThis, setLearnFromThis] = useState(true);
   const [formData, setFormData] = useState<any>(null);
 
-  const { data: invoice, isLoading } = useQuery<Invoice>({
+  const { data: invoice, isLoading, isError, error } = useQuery<Invoice>({
     queryKey: ["invoice", id],
     queryFn: () => api.invoices.get(id),
+    enabled: !!id,
   });
 
   useEffect(() => {
@@ -38,6 +40,17 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
         tax: invoice.extracted_data.tax?.toString() || "",
         total: invoice.extracted_data.total?.toString() || invoice.total?.toString() || "",
       });
+    } else if (invoice) {
+      // Fallback if no extracted data yet
+      setFormData({
+        vendor_name: "",
+        invoice_number: invoice.invoice_number || "",
+        invoice_date: "",
+        po_number: invoice.po_number || "",
+        subtotal: "",
+        tax: "",
+        total: invoice.total?.toString() || "",
+      });
     }
   }, [invoice]);
 
@@ -50,12 +63,12 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
     onSuccess: () => {
       toast.success("Invoice updated and re-matched");
       qc.invalidateQueries({ queryKey: ["invoice", id] });
-      setIsEditing(false);
     },
     onError: (e: any) => toast.error(e.message),
   });
 
   const handleSave = () => {
+    if (!formData) return;
     const updated = {
       ...invoice?.extracted_data,
       vendor_name: formData.vendor_name || null,
@@ -70,10 +83,35 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
     updateMutation.mutate({ data: updated, learn: learnFromThis });
   };
 
-  if (isLoading) return <div className="flex-1 p-6 flex items-center justify-center text-gray-400">Loading...</div>;
-  if (!invoice) return <div className="flex-1 p-6 text-gray-400">Invoice not found</div>;
+  if (isLoading) return (
+    <div className="flex-1 flex flex-col">
+      <Header title="Loading Invoice..." />
+      <div className="flex-1 flex items-center justify-center text-gray-400 gap-3">
+        <Loader2 className="h-5 w-5 animate-spin" />
+        <span className="font-medium">Fetching secure document...</span>
+      </div>
+    </div>
+  );
 
-  const isPdf = invoice.raw_file_url?.toLowerCase().endsWith(".pdf");
+  if (isError || !invoice) return (
+    <div className="flex-1 flex flex-col">
+      <Header title="Error" />
+      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+        <div className="h-16 w-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
+          <AlertTriangle className="h-8 w-8 text-red-500" />
+        </div>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Could not load invoice</h2>
+        <p className="text-gray-500 max-w-md mb-6">
+          {(error as any)?.message || "The invoice record might have been deleted or you don't have permission to view it."}
+        </p>
+        <Link href="/invoices">
+          <Button variant="outline">Back to Dashboard</Button>
+        </Link>
+      </div>
+    </div>
+  );
+
+  const isPdf = invoice.raw_file_url?.toLowerCase()?.endsWith(".pdf");
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-gray-50/30">
@@ -106,7 +144,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
               onClick={() => setLearnFromThis(!learnFromThis)}
               className={`w-9 h-5 rounded-full transition-colors relative ${learnFromThis ? "bg-blue-600" : "bg-gray-300"}`}
             >
-              <div className={`w-3.5 h-3.5 bg-white rounded-full shadow transition-transform absolute top-0.75 left-0.75 ${learnFromThis ? "translate-x-4" : ""}`} />
+              <div className={`w-3.5 h-3.5 bg-white rounded-full shadow transition-transform absolute top-1/2 -translate-y-1/2 left-0.5 ${learnFromThis ? "translate-x-4.5" : ""}`} />
             </button>
           </div>
           
@@ -126,7 +164,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
       <div className="flex-1 flex overflow-hidden">
         {/* LEFT: Data Pane */}
-        <div className="w-[45%] overflow-y-auto bg-white border-r p-8 space-y-8 scrollbar-hide">
+        <div className="w-[45%] overflow-y-auto bg-white border-r p-8 space-y-8">
           
           {invoice.exceptions && invoice.exceptions.filter(e => e.status === "open").map((exc) => (
             <div key={exc.id} className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex gap-4 animate-in fade-in zoom-in duration-300">
@@ -138,88 +176,92 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
             </div>
           ))}
 
-          <section className="space-y-6">
-            <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">General Information</h3>
-            <div className="grid grid-cols-2 gap-6">
-              <div className="col-span-2 space-y-2">
-                <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                  Vendor Name
-                  {(invoice.extracted_data?.confidence_score ?? 0) < 0.8 && <Sparkles className="h-3 w-3 text-amber-500" />}
-                </Label>
-                <Input 
-                  value={formData?.vendor_name} 
-                  onChange={e => setFormData({...formData, vendor_name: e.target.value})}
-                  className="bg-gray-50/50 border-gray-100 font-bold focus:bg-white transition-colors"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Invoice Number</Label>
-                <Input 
-                  value={formData?.invoice_number} 
-                  onChange={e => setFormData({...formData, invoice_number: e.target.value})}
-                  className="bg-gray-50/50 border-gray-100 font-bold focus:bg-white"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Document Date</Label>
-                <Input 
-                  type="date"
-                  value={formData?.invoice_date} 
-                  onChange={e => setFormData({...formData, invoice_date: e.target.value})}
-                  className="bg-gray-50/50 border-gray-100 font-bold focus:bg-white"
-                />
-              </div>
-              <div className="col-span-2 space-y-2">
-                <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">PO Reference (System Match)</Label>
-                <div className="relative">
-                  <Input 
-                    value={formData?.po_number} 
-                    onChange={e => setFormData({...formData, po_number: e.target.value})}
-                    className={`bg-gray-50/50 border-gray-100 font-bold focus:bg-white pl-10 ${
-                      !formData?.po_number ? "border-amber-200 bg-amber-50/30" : "border-green-100 bg-green-50/10"
-                    }`}
-                  />
-                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2">
-                    {formData?.po_number ? (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <AlertTriangle className="h-4 w-4 text-amber-500" />
-                    )}
+          {formData && (
+            <>
+              <section className="space-y-6">
+                <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">General Information</h3>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="col-span-2 space-y-2">
+                    <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                      Vendor Name
+                      {(invoice.extracted_data?.confidence_score ?? 0) < 0.8 && <Sparkles className="h-3 w-3 text-amber-500" />}
+                    </Label>
+                    <Input 
+                      value={formData.vendor_name} 
+                      onChange={e => setFormData({...formData, vendor_name: e.target.value})}
+                      className="bg-gray-50/50 border-gray-100 font-bold focus:bg-white transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Invoice Number</Label>
+                    <Input 
+                      value={formData.invoice_number} 
+                      onChange={e => setFormData({...formData, invoice_number: e.target.value})}
+                      className="bg-gray-50/50 border-gray-100 font-bold focus:bg-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Document Date</Label>
+                    <Input 
+                      type="date"
+                      value={formData.invoice_date} 
+                      onChange={e => setFormData({...formData, invoice_date: e.target.value})}
+                      className="bg-gray-50/50 border-gray-100 font-bold focus:bg-white"
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">PO Reference (System Match)</Label>
+                    <div className="relative">
+                      <Input 
+                        value={formData.po_number} 
+                        onChange={e => setFormData({...formData, po_number: e.target.value})}
+                        className={`bg-gray-50/50 border-gray-100 font-bold focus:bg-white pl-10 ${
+                          !formData.po_number ? "border-amber-200 bg-amber-50/30" : "border-green-100 bg-green-50/10"
+                        }`}
+                      />
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2">
+                        {formData.po_number ? (
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </section>
+              </section>
 
-          <section className="space-y-6 pt-8 border-t">
-            <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Financial Totals</h3>
-            <div className="grid grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Subtotal</Label>
-                <Input 
-                  value={formData?.subtotal} 
-                  onChange={e => setFormData({...formData, subtotal: e.target.value})}
-                  className="bg-gray-50/50 border-gray-100 font-black text-gray-700"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tax Amount</Label>
-                <Input 
-                  value={formData?.tax} 
-                  onChange={e => setFormData({...formData, tax: e.target.value})}
-                  className="bg-gray-50/50 border-gray-100 font-black text-gray-700"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Grand Total</Label>
-                <Input 
-                  value={formData?.total} 
-                  onChange={e => setFormData({...formData, total: e.target.value})}
-                  className="bg-blue-50 border-blue-100 font-black text-blue-700 focus:bg-white"
-                />
-              </div>
-            </div>
-          </section>
+              <section className="space-y-6 pt-8 border-t">
+                <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Financial Totals</h3>
+                <div className="grid grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Subtotal</Label>
+                    <Input 
+                      value={formData.subtotal} 
+                      onChange={e => setFormData({...formData, subtotal: e.target.value})}
+                      className="bg-gray-50/50 border-gray-100 font-black text-gray-700"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tax Amount</Label>
+                    <Input 
+                      value={formData.tax} 
+                      onChange={e => setFormData({...formData, tax: e.target.value})}
+                      className="bg-gray-50/50 border-gray-100 font-black text-gray-700"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Grand Total</Label>
+                    <Input 
+                      value={formData.total} 
+                      onChange={e => setFormData({...formData, total: e.target.value})}
+                      className="bg-blue-50 border-blue-100 font-black text-blue-700 focus:bg-white"
+                    />
+                  </div>
+                </div>
+              </section>
+            </>
+          )}
 
           {invoice.invoice_matches && invoice.invoice_matches.length > 0 && (
             <section className="space-y-6 pt-8 border-t">
@@ -255,7 +297,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                 className="w-full h-full border-none shadow-2xl"
                 title="Invoice Document"
               />
-            ) : (
+            ) : invoice.raw_file_url ? (
               <div className="w-full h-full p-8 overflow-auto flex items-start justify-center">
                 <img 
                   src={invoice.raw_file_url} 
@@ -263,17 +305,24 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                   className="max-w-full h-auto shadow-2xl rounded-lg"
                 />
               </div>
+            ) : (
+              <div className="flex flex-col items-center gap-3 text-gray-400">
+                <AlertTriangle className="h-10 w-10 opacity-20" />
+                <p className="text-sm font-medium">Document preview unavailable</p>
+              </div>
             )}
           </div>
           
           {/* Floating Controls */}
-          <div className="absolute top-6 right-6 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <a href={invoice.raw_file_url} target="_blank" rel="noreferrer">
-              <Button size="sm" className="bg-white/90 backdrop-blur text-gray-900 font-bold hover:bg-white shadow-xl">
-                <ExternalLink className="h-4 w-4 mr-2" /> Open Full
-              </Button>
-            </a>
-          </div>
+          {invoice.raw_file_url && (
+            <div className="absolute top-6 right-6 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <a href={invoice.raw_file_url} target="_blank" rel="noreferrer">
+                <Button size="sm" className="bg-white/90 backdrop-blur text-gray-900 font-bold hover:bg-white shadow-xl">
+                  <ExternalLink className="h-4 w-4 mr-2" /> Open Full
+                </Button>
+              </a>
+            </div>
+          )}
 
           {/* Confidence Indicator Overlay */}
           <div className="absolute bottom-6 left-6">
