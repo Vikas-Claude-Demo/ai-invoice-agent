@@ -59,7 +59,7 @@ async def _process_invoice(invoice_id: str, file_bytes: bytes, filename: str):
         }).execute()
 
 
-@router.get("/")
+@router.get("")
 async def list_invoices(status: str = None, page: int = 1, limit: int = 20):
     db = get_supabase()
     offset = (page - 1) * limit

@@ -3,12 +3,12 @@ const getApiUrl = () => {
     if (window.location.hostname === "localhost") {
       return "http://localhost:8000";
     }
-    // On Vercel, always use the relative backend prefix to match vercel.json
-    return "/_/backend";
+    // On Vercel, paths already start with /api, so we use an empty base
+    return "";
   }
   
   // Fallback for SSR
-  return "/_/backend";
+  return "";
 };
 
 const API_URL = getApiUrl();

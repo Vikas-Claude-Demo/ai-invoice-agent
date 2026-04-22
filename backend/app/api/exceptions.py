@@ -6,7 +6,7 @@ from app.services.matcher import _post_to_erp, _update_invoice_status
 router = APIRouter(prefix="/api/exceptions", tags=["exceptions"])
 
 
-@router.get("/")
+@router.get("")
 async def list_exceptions(status: str = "open", page: int = 1, limit: int = 20):
     db = get_supabase()
     offset = (page - 1) * limit

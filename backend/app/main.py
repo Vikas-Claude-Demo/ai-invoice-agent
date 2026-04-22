@@ -36,7 +36,13 @@ try:
 except Exception as e:
     print(f"Error printing settings: {e}")
 
-app = FastAPI(title="Invoice Processing Agent API", version="1.0.0", lifespan=lifespan)
+root_path = "/_/backend" if os.environ.get("VERCEL") else ""
+app = FastAPI(
+    title="Invoice Processing Agent API",
+    version="1.0.0",
+    lifespan=lifespan,
+    root_path=root_path
+)
 
 from fastapi.responses import JSONResponse
 
