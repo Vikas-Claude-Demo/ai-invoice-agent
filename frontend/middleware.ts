@@ -1,23 +1,53 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
+import { createServerClient } from '@supabase/auth-helpers-nextjs'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
-  const supabase = createMiddlewareClient({ req, res })
+  let res = NextResponse.next({
+    request: {
+      headers: req.headers,
+    },
+  })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return req.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: any) {
+          req.cookies.set({ name, value, ...options })
+          res = NextResponse.next({
+            request: {
+              headers: req.headers,
+            },
+          })
+          res.cookies.set({ name, value, ...options })
+        },
+        remove(name: string, options: any) {
+          req.cookies.set({ name, value: '', ...options })
+          res = NextResponse.next({
+            request: {
+              headers: req.headers,
+            },
+          })
+          res.cookies.set({ name, value: '', ...options })
+        },
+      },
+    }
+  )
 
   const {
     data: { session },
   } = await supabase.auth.getSession()
 
-  // If there is no session and the user is trying to access the dashboard/app
-  if (!session && (
-    req.nextUrl.pathname.startsWith('/dashboard') ||
-    req.nextUrl.pathname.startsWith('/invoices') ||
-    req.nextUrl.pathname.startsWith('/exceptions') ||
-    req.nextUrl.pathname.startsWith('/erp') ||
-    req.nextUrl.pathname.startsWith('/settings')
-  )) {
+  // If there is no session and the user is trying to access protected paths
+  const protectedPaths = ['/dashboard', '/invoices', '/exceptions', '/erp', '/settings']
+  const isProtectedPath = protectedPaths.some(path => req.nextUrl.pathname.startsWith(path))
+
+  if (!session && isProtectedPath) {
     // Check if it's a demo request
     if (req.nextUrl.searchParams.get('demo') === 'true') {
       return res;
