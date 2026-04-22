@@ -12,7 +12,8 @@ from app.models.schemas import ExtractedInvoiceData
 
 _client: genai.Client | None = None
 
-MODEL = "gemini-2.0-flash"
+MODEL_PRIMARY = "gemini-2.0-flash"
+MODEL_FALLBACK = "gemini-1.5-pro"
 
 EXTRACTION_PROMPT = """
 You are an expert invoice data extraction system. Analyze the provided invoice image and extract all relevant information.
@@ -53,10 +54,6 @@ def _get_client() -> genai.Client:
         _client = genai.Client(api_key=settings.gemini_api_key)
     return _client
 
-
-
-
-
 async def extract_invoice_data(file_bytes: bytes, filename: str) -> ExtractedInvoiceData:
     client = _get_client()
     suffix = Path(filename).suffix.lower()
@@ -70,13 +67,21 @@ async def extract_invoice_data(file_bytes: bytes, filename: str) -> ExtractedInv
     elif suffix == ".png":
         parts.append(types.Part.from_bytes(data=file_bytes, mime_type="image/png"))
     else:
-        # Fallback to image/jpeg for unknown types
         parts.append(types.Part.from_bytes(data=file_bytes, mime_type="image/jpeg"))
 
-    response = client.models.generate_content(
-        model=MODEL,
-        contents=parts,
-    )
+    try:
+        # Try primary model first
+        response = client.models.generate_content(
+            model=MODEL_PRIMARY,
+            contents=parts,
+        )
+    except Exception as e:
+        print(f"Primary model {MODEL_PRIMARY} failed: {e}. Retrying with fallback {MODEL_FALLBACK}...")
+        # Fallback to high-capacity model
+        response = client.models.generate_content(
+            model=MODEL_FALLBACK,
+            contents=parts,
+        )
 
     raw = response.text.strip()
     raw = re.sub(r"```json\s*", "", raw)
