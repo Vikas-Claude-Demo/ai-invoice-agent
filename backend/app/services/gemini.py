@@ -12,7 +12,7 @@ from app.models.schemas import ExtractedInvoiceData
 
 _client: genai.Client | None = None
 
-MODEL = "gemini-2.5-flash"
+MODEL = "gemini-2.0-flash"
 
 EXTRACTION_PROMPT = """
 You are an expert invoice data extraction system. Analyze the provided invoice image and extract all relevant information.
