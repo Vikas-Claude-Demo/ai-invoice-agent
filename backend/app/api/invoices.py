@@ -74,17 +74,6 @@ async def list_invoices(status: str = None, page: int = 1, limit: int = 20):
     return {"data": result.data, "total": count_res.count, "page": page, "limit": limit}
 
 
-@router.get("/{invoice_id}")
-async def get_invoice(invoice_id: str):
-    db = get_supabase()
-    result = db.table("invoices").select(
-        "*, vendors(name, email, gstin), invoice_matches(*, purchase_orders(po_number), grns(grn_number)), exceptions(*)"
-    ).eq("id", invoice_id).single().execute()
-    if not result.data:
-        raise HTTPException(404, "Invoice not found")
-    return result.data
-
-
 @router.get("/stats/summary")
 async def get_stats():
     db = get_supabase()
@@ -95,3 +84,14 @@ async def get_stats():
         by_status[status] = count
     exceptions_open = db.table("exceptions").select("id", count="exact").eq("status", "open").execute().count
     return {"total": total, "by_status": by_status, "open_exceptions": exceptions_open}
+
+
+@router.get("/{invoice_id}")
+async def get_invoice(invoice_id: str):
+    db = get_supabase()
+    result = db.table("invoices").select(
+        "*, vendors(name, email, gstin), invoice_matches(*, purchase_orders(po_number), grns(grn_number)), exceptions(*)"
+    ).eq("id", invoice_id).single().execute()
+    if not result.data:
+        raise HTTPException(404, "Invoice not found")
+    return result.data
