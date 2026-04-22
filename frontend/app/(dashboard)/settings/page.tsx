@@ -25,6 +25,12 @@ function GmailIntegration() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const disconnect = useMutation({
+    mutationFn: api.gmail.disconnect,
+    onSuccess: () => { toast.success("Gmail disconnected"); refetch(); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   useEffect(() => {
     if (searchParams.get("gmail") === "connected") {
       toast.success("Gmail connected successfully!");
@@ -63,10 +69,17 @@ function GmailIntegration() {
               <ExternalLink className="h-4 w-4" /> Connect Gmail
             </Button>
           ) : (
-            <Button variant="outline" onClick={() => poll.mutate()} disabled={poll.isPending} className="gap-1">
-              <RefreshCw className={`h-4 w-4 ${poll.isPending ? "animate-spin" : ""}`} />
-              {poll.isPending ? "Polling..." : "Poll Now"}
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => poll.mutate()} disabled={poll.isPending} className="gap-1">
+                <RefreshCw className={`h-4 w-4 ${poll.isPending ? "animate-spin" : ""}`} />
+                {poll.isPending ? "Polling..." : "Poll Now"}
+              </Button>
+              <Button variant="ghost" onClick={() => {
+                if (confirm("Are you sure you want to disconnect Gmail?")) disconnect.mutate();
+              }} disabled={disconnect.isPending} className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                Disconnect
+              </Button>
+            </div>
           )}
         </div>
         <p className="text-xs text-gray-400">

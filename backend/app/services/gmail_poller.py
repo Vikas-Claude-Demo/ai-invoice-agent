@@ -34,6 +34,13 @@ def _load_token() -> dict | None:
 def is_gmail_connected() -> bool:
     return _load_token() is not None
 
+def disconnect_gmail():
+    db = get_supabase()
+    try:
+        db.storage.from_("invoices").remove([TOKEN_PATH])
+    except Exception as e:
+        print(f"[Gmail] Disconnect failed (might already be disconnected): {e}")
+
 
 import urllib.parse
 import requests

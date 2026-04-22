@@ -38,3 +38,8 @@ async def trigger_poll():
         raise HTTPException(status_code=400, detail=f"Google API Error: {error_details}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+@router.post("/disconnect")
+async def gmail_disconnect():
+    from app.services.gmail_poller import disconnect_gmail
+    disconnect_gmail()
+    return {"message": "Gmail disconnected successfully"}

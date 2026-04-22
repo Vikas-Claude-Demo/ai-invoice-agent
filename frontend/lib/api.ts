@@ -79,6 +79,7 @@ export const api = {
     status: () => request<any>("/api/gmail/status"),
     connect: () => request<any>("/api/gmail/connect"),
     poll: () => request<any>("/api/gmail/poll", { method: "POST" }),
+    disconnect: () => request<any>("/api/gmail/disconnect", { method: "POST" }),
   },
   notifications: {
     list: (userId: string, unreadOnly = false) =>
