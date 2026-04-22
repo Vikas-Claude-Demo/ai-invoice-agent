@@ -9,7 +9,30 @@ from app.core.config import settings
 from app.core.supabase import get_supabase
 
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
-TOKEN_FILE = "gmail_token.json"
+TOKEN_PATH = "system/gmail_token.json"
+
+def _save_token(data: dict):
+    db = get_supabase()
+    file_bytes = json.dumps(data).encode("utf-8")
+    try:
+        db.storage.from_("invoices").remove([TOKEN_PATH])
+    except:
+        pass
+    try:
+        db.storage.from_("invoices").upload(TOKEN_PATH, file_bytes)
+    except:
+        pass
+
+def _load_token() -> dict | None:
+    db = get_supabase()
+    try:
+        res = db.storage.from_("invoices").download(TOKEN_PATH)
+        return json.loads(res)
+    except:
+        return None
+
+def is_gmail_connected() -> bool:
+    return _load_token() is not None
 
 
 import urllib.parse
@@ -49,17 +72,16 @@ def exchange_code_for_token(code: str) -> dict:
         "client_secret": settings.gmail_client_secret,
         "scopes": SCOPES,
     }
+    }
 
-    with open(TOKEN_FILE, "w") as f:
-        json.dump(token_data, f)
+    _save_token(token_data)
     return token_data
 
 
 def _get_credentials() -> Credentials | None:
-    if not os.path.exists(TOKEN_FILE):
+    data = _load_token()
+    if not data:
         return None
-    with open(TOKEN_FILE) as f:
-        data = json.load(f)
     creds = Credentials(
         token=data["token"],
         refresh_token=data.get("refresh_token"),
@@ -71,8 +93,7 @@ def _get_credentials() -> Credentials | None:
     if creds.expired and creds.refresh_token:
         creds.refresh(Request())
         data["token"] = creds.token
-        with open(TOKEN_FILE, "w") as f:
-            json.dump(data, f)
+        _save_token(data)
     return creds
 
 

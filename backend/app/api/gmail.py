@@ -21,8 +21,8 @@ async def gmail_callback(code: str, state: str = None):
 
 @router.get("/status")
 async def gmail_status():
-    connected = os.path.exists("gmail_token.json")
-    return {"connected": connected}
+    from app.services.gmail_poller import is_gmail_connected
+    return {"connected": is_gmail_connected()}
 
 
 @router.post("/poll")
