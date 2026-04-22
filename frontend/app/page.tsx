@@ -1,6 +1,7 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Mail, Shield, Zap, CheckCircle, ArrowRight, BarChart3, Clock, Globe } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -23,12 +24,21 @@ export default function LandingPage() {
             <a href="#security" className="hover:text-blue-600 transition-colors">Security</a>
           </div>
           <div className="flex items-center gap-4">
-            <Button variant="ghost" asChild className="hidden sm:flex text-gray-600">
-              <Link href="/login">Sign In</Link>
-            </Button>
-            <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-full shadow-lg shadow-blue-600/20 transition-all hover:scale-105 active:scale-95">
-              <Link href="/login">Get Started</Link>
-            </Button>
+            <Link 
+              href="/login" 
+              className={cn(buttonVariants({ variant: "ghost" }), "hidden sm:flex text-gray-600")}
+            >
+              Sign In
+            </Link>
+            <Link 
+              href="/login" 
+              className={cn(
+                buttonVariants(),
+                "bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-full shadow-lg shadow-blue-600/20 transition-all hover:scale-105 active:scale-95"
+              )}
+            >
+              Get Started
+            </Link>
           </div>
         </div>
       </nav>
@@ -54,14 +64,24 @@ export default function LandingPage() {
               Extraction, verification, and ERP synchronization — all in one place.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" asChild className="h-16 px-10 text-lg rounded-full bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-600/20 transition-all hover:translate-y-[-2px]">
-                <Link href="/login" className="flex items-center gap-2">
-                  Start Automating <ArrowRight className="h-5 w-5" />
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild className="h-16 px-10 text-lg rounded-full border-gray-200 hover:bg-gray-50 transition-all">
-                <Link href="/dashboard?demo=true">Try Live Demo</Link>
-              </Button>
+              <Link 
+                href="/login" 
+                className={cn(
+                  buttonVariants({ size: "lg" }),
+                  "h-16 px-10 text-lg rounded-full bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-600/20 transition-all hover:translate-y-[-2px] flex items-center gap-2"
+                )}
+              >
+                Start Automating <ArrowRight className="h-5 w-5" />
+              </Link>
+              <Link 
+                href="/dashboard?demo=true" 
+                className={cn(
+                  buttonVariants({ size: "lg", variant: "outline" }),
+                  "h-16 px-10 text-lg rounded-full border-gray-200 hover:bg-gray-50 transition-all"
+                )}
+              >
+                Try Live Demo
+              </Link>
             </div>
             <div className="mt-12 flex items-center gap-6">
               <div className="flex -space-x-3">
@@ -152,9 +172,15 @@ export default function LandingPage() {
           <div className="relative z-10 text-center">
             <h2 className="text-4xl lg:text-5xl font-bold text-white mb-8">Ready to reclaim your time?</h2>
             <p className="text-xl text-blue-100 mb-10 max-w-xl mx-auto">Join hundreds of accounting teams who have automated their entire invoice workflow.</p>
-            <Button size="lg" asChild className="h-16 px-12 text-lg rounded-full bg-white text-blue-600 hover:bg-blue-50 transition-all hover:scale-105 shadow-xl">
-              <Link href="/login">Get Started for Free</Link>
-            </Button>
+            <Link 
+              href="/login" 
+              className={cn(
+                buttonVariants({ size: "lg" }),
+                "h-16 px-12 text-lg rounded-full bg-white text-blue-600 hover:bg-blue-50 transition-all hover:scale-105 shadow-xl"
+              )}
+            >
+              Get Started for Free
+            </Link>
           </div>
         </div>
       </section>

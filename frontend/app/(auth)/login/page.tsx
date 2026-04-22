@@ -1,7 +1,8 @@
 "use client";
 
 import { useAuth } from "@/components/auth/auth-provider";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -89,13 +90,15 @@ export default function LoginPage() {
               </div>
             </div>
             
-            <Button 
-              variant="secondary" 
-              className="w-full py-6 text-base font-medium bg-gray-50 hover:bg-gray-100 text-gray-700 transition-all border border-transparent hover:border-gray-200"
-              asChild
+            <Link 
+              href="/dashboard?demo=true"
+              className={cn(
+                buttonVariants({ variant: "secondary" }),
+                "w-full py-6 text-base font-medium bg-gray-50 hover:bg-gray-100 text-gray-700 transition-all border border-transparent hover:border-gray-200"
+              )}
             >
-              <Link href="/dashboard?demo=true">Try Demo Mode</Link>
-            </Button>
+              Try Demo Mode
+            </Link>
           </CardContent>
           <div className="px-8 pb-8 text-center border-t border-gray-50 pt-6 mt-2">
             <p className="text-xs text-gray-400 leading-relaxed">
