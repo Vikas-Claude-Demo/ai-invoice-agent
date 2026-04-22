@@ -21,7 +21,7 @@ export default function LandingPage() {
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
             <a href="#features" className="hover:text-blue-600 transition-colors font-bold">Features</a>
             <a href="#workflow" className="hover:text-blue-600 transition-colors font-bold">How it Works</a>
-            <a href="#casestudy" className="hover:text-blue-600 transition-colors font-bold">Case Study</a>
+            <Link href="/case-study" className="hover:text-blue-600 transition-colors font-bold">Case Study</Link>
             <a href="#usecases" className="hover:text-blue-600 transition-colors font-bold">Use Cases</a>
           </div>
           <div className="flex items-center gap-4">
@@ -175,7 +175,7 @@ export default function LandingPage() {
             >
               <div className="absolute -inset-10 bg-blue-500/20 rounded-full blur-[100px]" />
               <img 
-                src="/home/brilworks/.gemini/antigravity/brain/bd438120-89ec-48b4-9372-06c21b486940/ai_invoice_case_study_viz_1776865007784.png" 
+                src="/assets/case-study-viz.png" 
                 alt="AI Invoice Visualization" 
                 className="rounded-[2.5rem] shadow-2xl relative z-10 border border-white/10"
               />
@@ -219,6 +219,9 @@ export default function LandingPage() {
                       <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> Processing time cut from 5 days to 2 minutes</li>
                       <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> 100% Data Accuracy across ERP entries</li>
                     </ul>
+                    <Link href="/case-study" className="inline-flex items-center gap-2 text-blue-400 font-bold mt-8 hover:text-blue-300 transition-colors">
+                      Read Full Story <ArrowRight className="h-4 w-4" />
+                    </Link>
                   </div>
                 </div>
               </div>
