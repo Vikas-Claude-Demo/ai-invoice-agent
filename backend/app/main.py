@@ -1,6 +1,5 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from contextlib import asynccontextmanager
 import os
 import traceback
@@ -9,8 +8,8 @@ import sys
 from app.core.config import settings
 from app.api import invoices, exceptions, erp, gmail, notifications
 
-
 try:
+    from apscheduler.schedulers.asyncio import AsyncIOScheduler
     scheduler = AsyncIOScheduler()
 except Exception as e:
     print(f"Warning: Could not initialize scheduler: {e}", file=sys.stderr)
@@ -70,6 +69,16 @@ app.include_router(exceptions.router)
 app.include_router(erp.router)
 app.include_router(gmail.router)
 app.include_router(notifications.router)
+
+
+@app.get("/")
+async def root():
+    return {
+        "message": "Welcome to the AI Invoice Processing Agent API",
+        "docs": "/docs",
+        "health": "/health",
+        "version": "1.0.0"
+    }
 
 
 @app.get("/health")
