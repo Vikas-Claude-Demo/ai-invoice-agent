@@ -43,6 +43,8 @@ class LineItemSchema(BaseModel):
 
 class ExtractedInvoiceData(BaseModel):
     vendor_name: Optional[str] = None
+    vendor_email: Optional[str] = None
+    vendor_gstin: Optional[str] = None
     invoice_number: Optional[str] = None
     invoice_date: Optional[str] = None
     po_number: Optional[str] = None

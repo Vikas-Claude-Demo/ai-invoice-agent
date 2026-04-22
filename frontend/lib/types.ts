@@ -20,6 +20,8 @@ export interface LineItem {
 
 export interface ExtractedData {
   vendor_name?: string;
+  vendor_email?: string;
+  vendor_gstin?: string;
   invoice_number?: string;
   invoice_date?: string;
   po_number?: string;

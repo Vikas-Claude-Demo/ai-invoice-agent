@@ -34,6 +34,8 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
     if (invoice?.extracted_data) {
       setFormData({
         vendor_name: invoice.extracted_data.vendor_name || "",
+        vendor_email: invoice.extracted_data.vendor_email || invoice.vendors?.email || "",
+        vendor_gstin: invoice.extracted_data.vendor_gstin || invoice.vendors?.gstin || "",
         invoice_number: invoice.extracted_data.invoice_number || invoice.invoice_number || "",
         invoice_date: invoice.extracted_data.invoice_date || "",
         po_number: invoice.extracted_data.po_number || invoice.po_number || "",
@@ -45,7 +47,9 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
     } else if (invoice) {
       // Fallback if no extracted data yet
       setFormData({
-        vendor_name: "",
+        vendor_name: invoice.vendors?.name || "",
+        vendor_email: invoice.vendors?.email || "",
+        vendor_gstin: invoice.vendors?.gstin || "",
         invoice_number: invoice.invoice_number || "",
         invoice_date: "",
         po_number: invoice.po_number || "",
@@ -75,6 +79,8 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
     const updated = {
       ...invoice?.extracted_data,
       vendor_name: formData.vendor_name || null,
+      vendor_email: formData.vendor_email || null,
+      vendor_gstin: formData.vendor_gstin || null,
       invoice_number: formData.invoice_number || null,
       invoice_date: formData.invoice_date || null,
       po_number: formData.po_number || null,
@@ -194,6 +200,24 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                       value={formData.vendor_name} 
                       onChange={e => setFormData({...formData, vendor_name: e.target.value})}
                       className="bg-gray-50/50 border-gray-100 font-bold focus:bg-white transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Vendor Email</Label>
+                    <Input 
+                      value={formData.vendor_email} 
+                      onChange={e => setFormData({...formData, vendor_email: e.target.value})}
+                      className="bg-gray-50/50 border-gray-100 font-medium focus:bg-white"
+                      placeholder="contact@vendor.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Vendor GSTIN/Tax ID</Label>
+                    <Input 
+                      value={formData.vendor_gstin} 
+                      onChange={e => setFormData({...formData, vendor_gstin: e.target.value.toUpperCase()})}
+                      className="bg-gray-50/50 border-gray-100 font-medium focus:bg-white uppercase"
+                      placeholder="27AAAAA0000A1Z5"
                     />
                   </div>
                   <div className="space-y-2">

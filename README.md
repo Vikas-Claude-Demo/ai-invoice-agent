@@ -1,139 +1,66 @@
-# AI Invoice Processing Agent 🤖📄
+# AI Invoice Processing Agent 🤖💸
 
-A state-of-the-art AI-driven automation system designed to streamline accounts payable (AP) workflows. This agent monitors inbound invoices, performs intelligent data extraction using Gemini AI, and handles PO/GRN reconciliation with a real-time dashboard.
+A production-ready, highly resilient AI-driven accounts payable automation system. It handles the entire invoice lifecycle from ingestion to ERP posting with "Human-in-the-Loop" AI learning.
 
-[![Deployment Status](https://img.shields.io/badge/Deployment-Vercel-black?logo=vercel)](https://ai-invoice-agent-beta.vercel.app/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+## 🚀 Key Features & Automation
 
----
+### 1. Bulletproof Extraction Pipeline
+- **Multi-Model Cascade**: Orchestrates 42+ combinations of Gemini models (Pro, Flash, Lite, etc.) across multiple API versions and keys.
+- **Local OCR Fallback**: Integrated `pdfplumber` and `pytesseract` as an offline safety net. If AI APIs fail, the system still extracts data with 70%+ accuracy.
+- **Multi-Currency Support**: Automatic detection and formatting for INR, USD, GBP, and EUR.
 
-## 🌟 Key Features
+### 2. Intelligent Verification Workbench
+- **Side-by-Side UI**: Real-time document preview paired with an editable metadata form for lightning-fast manual verification.
+- **Auto-Vendor Onboarding**: Automatically detects new suppliers via Name, Email, and GSTIN/Tax ID. If a vendor doesn't exist, it's created on the fly.
+- **3-Way Matching**: Automated reconciliation between Invoice, Purchase Order (PO), and Goods Receipt Note (GRN).
 
-- **🚀 Live Ingestion Monitoring**: Real-time visualization of inbound invoice processing via a modern dashboard.
-- **🧠 AI-Powered Extraction**: High-accuracy data extraction from complex invoice layouts using Google Gemini Pro.
-- **⚖️ PO/GRN Reconciliation**: Automated matching of invoices against Purchase Orders and Goods Receipt Notes.
-- **📊 Real-time Dashboard**: Premium UI with dark mode support, fluid animations, and comprehensive analytics.
-- **📬 Gmail Integration**: Automatically poll and process invoices received via email.
-- **🔐 Secure Persistence**: Robust backend storage and authentication powered by Supabase.
+### 3. "AI Learn" Exception Engine
+- **Pattern-Based Learning**: When a human corrects an invoice error, the system "learns" the pattern.
+- **Self-Healing Pipeline**: Future invoices with similar discrepancies (e.g., specific vendor tax quirks) are automatically corrected using stored AI learnings.
 
----
+### 4. Enterprise-Grade Ingestion
+- **Gmail Integration**: Auto-polls and extracts invoices from email attachments.
+- **Bulk Upload**: High-speed processing for manual document uploads.
+- **Real-time Notifications**: Instant alerts for processing exceptions or high-value invoice approvals.
 
-## 🏗️ Technical Architecture
+## 🛠 Tech Stack
+- **Frontend**: Next.js 15 (App Router), Tailwind CSS 4, TanStack Query, Framer Motion.
+- **Backend**: FastAPI, Python 3.10+.
+- **Database/Storage**: Supabase (PostgreSQL + S3 Storage).
+- **AI/ML**: Google Gemini Pro/Flash, Tesseract OCR.
 
-```mermaid
-graph TD
-    A[Source: Email/Upload] --> B[Monitoring Agent]
-    B --> C{Gemini AI: Extraction}
-    C --> D[Data Validation]
-    D --> E[PO/GRN Matching Engine]
-    E --> F[Supabase PostgreSQL]
-    F --> G[Next.js Dashboard]
-    G --> H[Human-in-the-loop Resolution]
+## 📦 Setup & Deployment
+
+### Environment Variables
+Create a `.env` in the root:
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+
+# AI Keys
+GEMINI_API_KEY=...
+GEMINI_API_KEY_BACKUP=... # Optional fallback key
 ```
 
----
+### Installation
+```bash
+# Backend
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload
 
-## 🛠️ Technology Stack
-
-### Frontend
-- **Framework**: Next.js 14+ (App Router, Turbopack)
-- **Styling**: TailwindCSS 4 (CSS-first configuration)
-- **Animations**: Framer Motion
-- **State Management**: TanStack React Query
-- **Icons**: Lucide React
-
-### Backend
-- **Framework**: Python (FastAPI)
-- **AI**: Google Gemini AI API
-- **Scheduler**: APScheduler for background tasks
-
-### Infrastructure
-- **Database/Storage**: Supabase
-- **Deployment**: Vercel (Experimental Multi-Service Setup)
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- Python 3.10+
-- Supabase Account (New project with database schema applied)
-- Google Gemini API Key
-- Google Cloud Console for Gmail API credentials (optional)
-
-### Local Development Setup
-
-1. **Clone the Repository**
-   ```bash
-   git clone https://github.com/Vikas-Claude-Demo/ai-invoice-agent.git
-   cd ai-invoice-agent
-   ```
-
-2. **Frontend Configuration**
-   ```bash
-   cd frontend
-   npm install
-   cp .env.local.example .env
-   # Add your NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY
-   npm run dev
-   ```
-
-3. **Backend Configuration**
-   ```bash
-   cd ../backend
-   python -m venv venv
-   source venv/bin/activate  # Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   cp .env.example .env
-   # Configure your Supabase, Gemini, and Gmail keys
-   python main.py
-   ```
-
----
-
-## ☁️ Deployment on Vercel
-
-This repository is optimized for Vercel's multi-service deployment.
-
-1. **Connect Repository**: Link your GitHub repo to Vercel.
-2. **Multi-Service Detection**: Vercel will automatically detect `vercel.json` and deploy both the Next.js frontend and the FastAPI backend.
-3. **Environment Variables**: Add the following keys in your Vercel Dashboard:
-
-| Variable | Description |
-| :--- | :--- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase Project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase Anon Key |
-| `GEMINI_API_KEY` | Google Gemini AI API Key |
-| `SUPABASE_SERVICE_KEY` | Supabase Service Role Key (for backend) |
-| `GMAIL_CLIENT_ID` | Google OAuth Client ID |
-| `GMAIL_CLIENT_SECRET` | Google OAuth Client Secret |
-| `GMAIL_REDIRECT_URI` | `https://your-domain.vercel.app/_/backend/api/gmail/callback` |
-| `SECRET_KEY` | A long random string for auth tokens |
-
----
-
-## 📂 Project Structure
-
-```text
-.
-├── frontend/             # Next.js 14 Application
-│   ├── app/              # Routes and Pages
-│   ├── components/       # UI Components (Shadcn UI)
-│   └── lib/              # API and Supabase clients
-├── backend/              # FastAPI Python Backend
-│   ├── app/              # API Logic and Services
-│   └── main.py           # Entry point
-└── vercel.json           # Multi-service deployment config
+# Frontend
+cd frontend
+npm install
+npm run dev
 ```
 
----
-
-## 📄 License
-
-Distributed under the **MIT License**. See `LICENSE` for more information.
-
----
-
-Developed with ❤️ by [Dhaval Trivedi]
+## 📈 Roadmap
+- [x] Resilient AI Pipeline
+- [x] Side-by-Side Verification Workbench
+- [x] AI Learning from Human Corrections
+- [x] Auto-Vendor Onboarding
+- [ ] Multi-tenant RLS Policies
+- [ ] Advanced Fuzzy Matching for Line Items

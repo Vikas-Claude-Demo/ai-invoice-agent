@@ -145,6 +145,15 @@ def extract_with_ocr(file_bytes: bytes, filename: str) -> ExtractedInvoiceData:
         r"^([A-Z][A-Z\s&.,\-]{3,40})$",  # First capitalized line as vendor
     ])
 
+    vendor_gstin = _find_pattern(text, [
+        r"(?:gstin|gst|vat|tax\s*id)[:\s]*([A-Z0-9]{15})",
+        r"([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1})", # Indian GSTIN
+    ])
+
+    vendor_email = _find_pattern(text, [
+        r"(?:email|e-mail|mail)[:\s]*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})",
+    ])
+
     invoice_number = _find_pattern(text, [
         r"(?:invoice|inv|bill)\s*(?:no|number|#|num)[.:\s]*([A-Za-z0-9\-/]+)",
         r"(?:invoice|inv)\s*[.:\s]*([A-Za-z0-9\-/]+)",
@@ -198,6 +207,8 @@ def extract_with_ocr(file_bytes: bytes, filename: str) -> ExtractedInvoiceData:
 
     result = ExtractedInvoiceData(
         vendor_name=vendor_name,
+        vendor_email=vendor_email,
+        vendor_gstin=vendor_gstin,
         invoice_number=invoice_number,
         invoice_date=invoice_date,
         po_number=po_number,

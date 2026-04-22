@@ -23,6 +23,21 @@ async def run_matching(invoice_id: str) -> dict:
         return {"status": "exception", "reason": "no_po_number"}
 
     po_res = db.table("purchase_orders").select("*").eq("po_number", po_number).execute()
+    
+    # --- Self-Healing AI Loop ---
+    if not po_res.data:
+        from app.services.ai_learning import check_learnings, _categorize_reason
+        # Try to find if this was auto-corrected before for this vendor
+        learning = check_learnings(extracted.get("vendor_name"), po_number, "po_not_found")
+        if learning and learning.get("corrected_po_number"):
+            new_po = learning["corrected_po_number"]
+            print(f"[Matcher] Applying AI Learning: Correcting PO {po_number} -> {new_po}")
+            po_res = db.table("purchase_orders").select("*").eq("po_number", new_po).execute()
+            if po_res.data:
+                po_number = new_po
+                # Update invoice with the auto-corrected PO
+                db.table("invoices").update({"po_number": po_number}).eq("id", invoice_id).execute()
+
     if not po_res.data:
         await _flag_exception(invoice_id, f"PO number {po_number} not found in system")
         return {"status": "exception", "reason": "po_not_found"}
@@ -43,16 +58,22 @@ async def run_matching(invoice_id: str) -> dict:
     grn_id = grns[0]["id"]
 
     if variance > AMOUNT_TOLERANCE:
-        reason = f"Amount variance {variance:.1%} exceeds {AMOUNT_TOLERANCE:.0%} tolerance. Invoice: {invoice_total}, PO: {po_amount}"
-        await _flag_exception(invoice_id, reason)
-        db.table("invoice_matches").insert({
-            "invoice_id": invoice_id,
-            "grn_id": grn_id,
-            "po_id": po["id"],
-            "match_score": round(1 - variance, 3),
-            "match_status": MatchStatus.exception,
-        }).execute()
-        return {"status": "exception", "reason": "amount_variance", "variance": variance}
+        # Check if we have a learning for this variance
+        from app.services.ai_learning import check_learnings
+        learning = check_learnings(extracted.get("vendor_name"), po_number, "amount_variance")
+        if learning and learning.get("corrected_total") == invoice_total:
+            print(f"[Matcher] Applying AI Learning: Auto-accepting amount variance for {extracted.get('vendor_name')}")
+        else:
+            reason = f"Amount variance {variance:.1%} exceeds {AMOUNT_TOLERANCE:.0%} tolerance. Invoice: {invoice_total}, PO: {po_amount}"
+            await _flag_exception(invoice_id, reason)
+            db.table("invoice_matches").insert({
+                "invoice_id": invoice_id,
+                "grn_id": grn_id,
+                "po_id": po["id"],
+                "match_score": round(1 - variance, 3),
+                "match_status": MatchStatus.exception,
+            }).execute()
+            return {"status": "exception", "reason": "amount_variance", "variance": variance}
 
     dup_res = db.table("invoices").select("id").eq("invoice_number", invoice.get("invoice_number")).neq("id", invoice_id).execute()
     if dup_res.data:

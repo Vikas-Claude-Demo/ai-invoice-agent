@@ -41,11 +41,21 @@ async def _process_invoice(invoice_id: str, file_bytes: bytes, filename: str):
     db = get_supabase()
     try:
         extracted = await extract_invoice_data(file_bytes, filename)
+        
+        # Link or create vendor
+        from app.services.vendor_service import get_or_create_vendor
+        vendor_id = get_or_create_vendor(
+            name=extracted.vendor_name,
+            email=extracted.vendor_email,
+            gstin=extracted.vendor_gstin
+        )
+
         db.table("invoices").update({
             "extracted_data": extracted.model_dump(),
             "invoice_number": extracted.invoice_number,
             "po_number": extracted.po_number,
             "total": extracted.total,
+            "vendor_id": vendor_id,
             "status": "extracted",
         }).eq("id", invoice_id).execute()
 

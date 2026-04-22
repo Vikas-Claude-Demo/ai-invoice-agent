@@ -44,6 +44,8 @@ You are an expert invoice data extraction system. Analyze the provided invoice i
 Return a JSON object with EXACTLY this structure (no markdown, no explanation, just raw JSON):
 {
   "vendor_name": "string or null",
+  "vendor_email": "string or null",
+  "vendor_gstin": "string or null",
   "invoice_number": "string or null",
   "invoice_date": "YYYY-MM-DD format or null",
   "po_number": "string or null",
