@@ -26,9 +26,9 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   
   const url = `${baseUrl}${cleanPath}`;
   
-  const headers: Record<string, string> = { ...options?.headers };
+  const headers = new Headers(options?.headers);
   if (!(options?.body instanceof FormData)) {
-    headers["Content-Type"] = "application/json";
+    headers.set("Content-Type", "application/json");
   }
   
   const res = await fetch(url, {
