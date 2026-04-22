@@ -88,7 +88,7 @@ export default function PurchaseOrdersPage() {
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Vendor</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Date</th>
                 <th className="text-right px-4 py-3 font-medium text-gray-600">Amount</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600 uppercase tracking-wider">Actions</th>
+                <th className="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
               </tr></thead>
               <tbody>
                 {isLoading ? (
@@ -106,26 +106,28 @@ export default function PurchaseOrdersPage() {
                     </td>
                     <td className="px-4 py-4 text-gray-600">{po.po_date ? format(new Date(po.po_date), "dd MMM yyyy") : "—"}</td>
                     <td className="px-4 py-4 text-right font-black text-gray-900">₹{po.total_amount?.toLocaleString()}</td>
-                    <td className="px-4 py-4">
-                      <Badge className={`${statusColor[po.status]} border-0 px-3 py-1 rounded-full text-[10px] font-bold uppercase`}>
+                    <td className="px-4 py-4 text-center">
+                      <Badge className={`${statusColor[po.status]} border-0 px-3 py-0.5 rounded-full text-[10px] font-bold uppercase`}>
                         {po.status}
                       </Badge>
                     </td>
-                    <td className="px-4 py-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button 
-                        variant="secondary" 
-                        size="sm" 
-                        onClick={() => {
-                          setGrnPoId(po.id);
-                          setGrnOpen(true);
-                          const prefix = localStorage.getItem("grn_prefix") || "GRN-" + new Date().getFullYear() + "-";
-                          setGrnNumber(prefix + (Math.floor(Math.random() * 9000) + 1000));
-                        }} 
-                        className="h-8 bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white border-blue-100"
-                        disabled={po.status === "closed" || po.status === "cancelled"}
-                      >
-                        Receive Goods
-                      </Button>
+                    <td className="px-4 py-4 text-right">
+                      <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => {
+                            setGrnPoId(po.id);
+                            setGrnOpen(true);
+                            const prefix = localStorage.getItem("grn_prefix") || "GRN-" + new Date().getFullYear() + "-";
+                            setGrnNumber(prefix + (Math.floor(Math.random() * 9000) + 1000));
+                          }} 
+                          className="h-7 px-3 text-[11px] font-bold border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white transition-all"
+                          disabled={po.status === "closed" || po.status === "cancelled"}
+                        >
+                          Receive Goods
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
