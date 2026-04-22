@@ -72,7 +72,6 @@ def exchange_code_for_token(code: str) -> dict:
         "client_secret": settings.gmail_client_secret,
         "scopes": SCOPES,
     }
-    }
 
     _save_token(token_data)
     return token_data
