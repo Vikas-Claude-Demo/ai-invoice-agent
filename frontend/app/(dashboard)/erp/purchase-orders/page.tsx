@@ -103,17 +103,22 @@ export default function PurchaseOrdersPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="space-y-2.5">
                 <Label className="text-sm font-bold text-gray-700 uppercase tracking-tight">Vendor Details *</Label>
-                <Select value={vendorId} onValueChange={(v: string | null) => setVendorId(v ?? "")}>
+                <Select value={vendorId} onValueChange={(v: string | null) => {
+                  setVendorId(v ?? "");
+                  // Auto-generate PO number if empty
+                  if (!poNumber) {
+                    const prefix = localStorage.getItem("po_prefix") || "PO-" + new Date().getFullYear() + "-";
+                    const count = (pos.length + 1).toString().padStart(3, "0");
+                    setPoNumber(prefix + count);
+                  }
+                }}>
                   <SelectTrigger className="bg-white border-gray-200 h-11 focus:ring-2 focus:ring-blue-500 transition-all">
                     <SelectValue placeholder="Select vendor" />
                   </SelectTrigger>
                   <SelectContent className="max-h-[300px]">
                     {vendors.map(v => (
                       <SelectItem key={v.id} value={v.id} className="py-2.5 cursor-pointer">
-                        <div className="flex flex-col">
-                          <span className="font-medium">{v.name}</span>
-                          <span className="text-xs text-gray-400">{v.email}</span>
-                        </div>
+                        {v.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -125,7 +130,7 @@ export default function PurchaseOrdersPage() {
                   value={poNumber} 
                   onChange={e => setPoNumber(e.target.value)} 
                   placeholder="e.g. PO-2024-8832" 
-                  className="bg-white border-gray-200 h-11 focus:ring-2 focus:ring-blue-500" 
+                  className="bg-white border-gray-200 h-11 focus:ring-2 focus:ring-blue-500 font-mono" 
                 />
               </div>
               <div className="space-y-2.5">

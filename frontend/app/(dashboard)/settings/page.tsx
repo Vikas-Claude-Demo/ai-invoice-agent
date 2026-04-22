@@ -81,10 +81,49 @@ export default function SettingsPage() {
   return (
     <div className="flex flex-col flex-1">
       <Header title="Settings" />
-      <div className="p-6 max-w-2xl space-y-4">
         <Suspense fallback={<div className="h-40 bg-gray-100 rounded-lg animate-pulse" />}>
           <GmailIntegration />
         </Suspense>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <RefreshCw className="h-5 w-5" />
+              Numbering Series
+            </CardTitle>
+            <CardDescription>Configure auto-generation prefixes for POs and GRNs</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">PO Prefix</label>
+                <input 
+                  type="text" 
+                  defaultValue={localStorage.getItem("po_prefix") || "PO-" + new Date().getFullYear() + "-"}
+                  onChange={(e) => localStorage.setItem("po_prefix", e.target.value)}
+                  className="w-full p-2 border rounded-md text-sm"
+                  placeholder="e.g. PO-2024-"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">GRN Prefix</label>
+                <input 
+                  type="text" 
+                  defaultValue={localStorage.getItem("grn_prefix") || "GRN-" + new Date().getFullYear() + "-"}
+                  onChange={(e) => localStorage.setItem("grn_prefix", e.target.value)}
+                  className="w-full p-2 border rounded-md text-sm"
+                  placeholder="e.g. GRN-2024-"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-gray-400">
+              Prefixes are used to auto-suggest the next document number. You can still edit them manually during creation.
+            </p>
+            <Button onClick={() => toast.success("Settings saved locally")} variant="outline" size="sm">
+              Save Configuration
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

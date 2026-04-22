@@ -81,9 +81,17 @@ export default function GRNsPage() {
           <div className="space-y-3">
             <div className="space-y-1">
               <Label>Purchase Order *</Label>
-              <Select value={poId} onValueChange={(v: string | null) => setPoId(v ?? "")}>
+              <Select value={poId} onValueChange={(v: string | null) => {
+                setPoId(v ?? "");
+                // Auto-generate GRN number if empty
+                if (!grnNumber) {
+                  const prefix = localStorage.getItem("grn_prefix") || "GRN-" + new Date().getFullYear() + "-";
+                  const count = (grns.length + 1).toString().padStart(3, "0");
+                  setGrnNumber(prefix + count);
+                }
+              }}>
                 <SelectTrigger><SelectValue placeholder="Select PO" /></SelectTrigger>
-                <SelectContent>{pos.filter(p => p.status === "open").map(p => <SelectItem key={p.id} value={p.id}>{p.po_number} — {p.vendors?.name}</SelectItem>)}</SelectContent>
+                <SelectContent>{pos.filter(p => p.status === "open").map(p => <SelectItem key={p.id} value={p.id}>{p.po_number}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1"><Label>GRN Number *</Label><Input value={grnNumber} onChange={e => setGrnNumber(e.target.value)} /></div>
