@@ -15,7 +15,7 @@ import {
   FileText as InvoiceIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 
 const navItems = [
@@ -33,6 +33,7 @@ const navItems = [
 ];
 
 export default function Sidebar() {
+  const supabase = createClient();
   const pathname = usePathname();
   const router = useRouter();
 

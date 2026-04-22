@@ -1,43 +1,8 @@
-import { createServerClient } from '@supabase/auth-helpers-nextjs'
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
+import { createClient } from '@/utils/supabase/middleware'
 
-export async function middleware(req: NextRequest) {
-  let res = NextResponse.next({
-    request: {
-      headers: req.headers,
-    },
-  })
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return req.cookies.get(name)?.value
-        },
-        set(name: string, value: string, options: any) {
-          req.cookies.set({ name, value, ...options })
-          res = NextResponse.next({
-            request: {
-              headers: req.headers,
-            },
-          })
-          res.cookies.set({ name, value, ...options })
-        },
-        remove(name: string, options: any) {
-          req.cookies.set({ name, value: '', ...options })
-          res = NextResponse.next({
-            request: {
-              headers: req.headers,
-            },
-          })
-          res.cookies.set({ name, value: '', ...options })
-        },
-      },
-    }
-  )
+export async function middleware(request: NextRequest) {
+  const { supabase, supabaseResponse } = createClient(request)
 
   const {
     data: { session },
@@ -45,21 +10,21 @@ export async function middleware(req: NextRequest) {
 
   // If there is no session and the user is trying to access protected paths
   const protectedPaths = ['/dashboard', '/invoices', '/exceptions', '/erp', '/settings']
-  const isProtectedPath = protectedPaths.some(path => req.nextUrl.pathname.startsWith(path))
+  const isProtectedPath = protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))
 
   if (!session && isProtectedPath) {
     // Check if it's a demo request
-    if (req.nextUrl.searchParams.get('demo') === 'true') {
-      return res;
+    if (request.nextUrl.searchParams.get('demo') === 'true') {
+      return supabaseResponse;
     }
 
-    const redirectUrl = req.nextUrl.clone()
+    const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/login'
-    redirectUrl.searchParams.set('redirectedFrom', req.nextUrl.pathname)
+    redirectUrl.searchParams.set('redirectedFrom', request.nextUrl.pathname)
     return NextResponse.redirect(redirectUrl)
   }
 
-  return res
+  return supabaseResponse
 }
 
 export const config = {
