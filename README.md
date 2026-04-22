@@ -36,6 +36,26 @@ To enable automated email polling:
    - `GMAIL_CLIENT_SECRET`
    - `GMAIL_REDIRECT_URI` (must match the whitelisted one)
 
+## 🔄 System Architecture & Automated Workflow
+The system operates on a highly automated, self-healing pipeline. Here is the step-by-step lifecycle of an invoice:
+
+1. **Ingestion (The Trigger)**:
+   - Invoices enter via manual PDF/Image upload or automatically through the Gmail Polling service.
+   - The raw document is uploaded to Supabase S3 storage, and an `invoice` record is created in `processing` status.
+2. **AI Extraction & Auto-Onboarding**:
+   - The file is sent to the Gemini Vision API. If the API fails or rate-limits, the system automatically falls back to a local OCR engine (`tesseract`/`pdfplumber`).
+   - The engine extracts monetary values, PO numbers, and vendor details (Name, Email, GSTIN, Currency).
+   - **Auto-Onboarding**: The system checks if the extracted `vendor_name` or `GSTIN` exists. If not, a new supplier is automatically created and linked.
+3. **The Matching Engine & Self-Healing Loop**:
+   - The system attempts a **3-Way Match** (Invoice -> Purchase Order -> GRN).
+   - **Self-Healing**: If a PO is not found or an amount variance occurs, the engine checks the `ai_learnings` database. If a human previously corrected this specific vendor's quirk (e.g., mapping a missing PO to a default one), the AI automatically applies the correction.
+4. **Verification Workbench (Human-in-the-Loop)**:
+   - If an invoice cannot be auto-matched, it is flagged as an `exception`.
+   - The AP clerk uses the **Side-by-Side Verification Workbench** to compare the extracted data against the raw PDF.
+   - When the clerk makes a correction (e.g., fixing a wrong PO number) and clicks "Save & Match" with *AI Learning* enabled, the system stores this correction pattern in the `ai_learnings` table.
+5. **ERP Posting**:
+   - Once fully matched, a journal entry is automatically generated in the `erp_entries` table, debiting Expense and crediting Accounts Payable.
+
 ## 🛠 Tech Stack
 - **Frontend**: Next.js 15 (App Router), Tailwind CSS 4, TanStack Query, Framer Motion.
 - **Backend**: FastAPI, Python 3.10+.
