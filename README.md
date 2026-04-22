@@ -56,6 +56,70 @@ The system operates on a highly automated, self-healing pipeline. Here is the st
 5. **ERP Posting**:
    - Once fully matched, a journal entry is automatically generated in the `erp_entries` table, debiting Expense and crediting Accounts Payable.
 
+### 📊 User Flow & System Pipeline
+```mermaid
+graph TD
+    A[Invoice Received] -->|Gmail Poller| B(S3 Storage)
+    A -->|Manual Upload| B
+    B --> C{AI Extraction}
+    C -->|Gemini Vision| D[Extracted Data]
+    C -->|Fallback: OCR| D
+    D --> E{Auto-Onboarding}
+    E -->|Vendor Exists| F[3-Way Match]
+    E -->|New Vendor| G[Create Vendor]
+    G --> F
+    F -->|Matched| H[ERP Posting]
+    F -->|Mismatch| I{Self-Healing Loop}
+    I -->|Past AI Learning Found| J[Auto-Correct]
+    J --> F
+    I -->|No Learning| K[Exception Queue]
+    K -->|Human Verification Workbench| L[Manual Fix + Learn]
+    L --> F
+```
+
+### 🗄️ Entity Relationship Diagram (ERD)
+```mermaid
+erDiagram
+    VENDORS ||--o{ INVOICES : "issues"
+    VENDORS ||--o{ PURCHASE_ORDERS : "receives"
+    PURCHASE_ORDERS ||--o{ GRNS : "fulfills"
+    INVOICES ||--o{ EXCEPTIONS : "generates"
+    INVOICES ||--o{ ERP_ENTRIES : "posts to"
+    
+    VENDORS {
+        uuid id PK
+        string name
+        string email
+        string gstin
+    }
+    INVOICES {
+        uuid id PK
+        uuid vendor_id FK
+        string invoice_number
+        string po_number
+        float total
+        string status
+        jsonb extracted_data
+    }
+    PURCHASE_ORDERS {
+        uuid id PK
+        string po_number
+        uuid vendor_id FK
+        float total_amount
+    }
+    GRNS {
+        uuid id PK
+        string grn_number
+        uuid po_id FK
+    }
+    AI_LEARNINGS {
+        uuid id PK
+        string vendor_name
+        string exception_type
+        string corrected_po_number
+    }
+```
+
 ## 🛠 Tech Stack
 - **Frontend**: Next.js 15 (App Router), Tailwind CSS 4, TanStack Query, Framer Motion.
 - **Backend**: FastAPI, Python 3.10+.
@@ -97,3 +161,8 @@ npm run dev
 - [x] Auto-Vendor Onboarding
 - [ ] Multi-tenant RLS Policies
 - [ ] Advanced Fuzzy Matching for Line Items
+
+## 👨‍💻 Developer
+Developed with ❤️ by [Dr. Dhaval Trivedi](https://drdhaval.in)
+
+🔗 **GitHub Profile:** [drdhavaltrivedi](https://github.com/drdhavaltrivedi)
