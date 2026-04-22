@@ -2,8 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
-  turbopack: {
-    root: __dirname,
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: "/_/backend/api/:path*",
+      },
+    ];
   },
 };
 
