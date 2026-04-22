@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Mail, CheckCircle, RefreshCw, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
-import { useEffect, Suspense } from "react";
+import { useEffect, Suspense, useState } from "react";
 
 function GmailIntegration() {
   const searchParams = useSearchParams();
@@ -78,6 +78,15 @@ function GmailIntegration() {
 }
 
 export default function SettingsPage() {
+  const [poPrefix, setPoPrefix] = useState("");
+  const [grnPrefix, setGrnPrefix] = useState("");
+
+  useEffect(() => {
+    // Only access localStorage on the client
+    setPoPrefix(localStorage.getItem("po_prefix") || "PO-" + new Date().getFullYear() + "-");
+    setGrnPrefix(localStorage.getItem("grn_prefix") || "GRN-" + new Date().getFullYear() + "-");
+  }, []);
+
   return (
     <div className="flex flex-col flex-1">
       <Header title="Settings" />
@@ -100,8 +109,11 @@ export default function SettingsPage() {
                 <label className="text-sm font-medium text-gray-700">PO Prefix</label>
                 <input 
                   type="text" 
-                  defaultValue={localStorage.getItem("po_prefix") || "PO-" + new Date().getFullYear() + "-"}
-                  onChange={(e) => localStorage.setItem("po_prefix", e.target.value)}
+                  value={poPrefix}
+                  onChange={(e) => {
+                    setPoPrefix(e.target.value);
+                    localStorage.setItem("po_prefix", e.target.value);
+                  }}
                   className="w-full p-2 border rounded-md text-sm"
                   placeholder="e.g. PO-2024-"
                 />
@@ -110,8 +122,11 @@ export default function SettingsPage() {
                 <label className="text-sm font-medium text-gray-700">GRN Prefix</label>
                 <input 
                   type="text" 
-                  defaultValue={localStorage.getItem("grn_prefix") || "GRN-" + new Date().getFullYear() + "-"}
-                  onChange={(e) => localStorage.setItem("grn_prefix", e.target.value)}
+                  value={grnPrefix}
+                  onChange={(e) => {
+                    setGrnPrefix(e.target.value);
+                    localStorage.setItem("grn_prefix", e.target.value);
+                  }}
                   className="w-full p-2 border rounded-md text-sm"
                   placeholder="e.g. GRN-2024-"
                 />
