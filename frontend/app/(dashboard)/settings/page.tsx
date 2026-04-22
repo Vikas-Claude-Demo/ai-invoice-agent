@@ -81,6 +81,7 @@ export default function SettingsPage() {
   return (
     <div className="flex flex-col flex-1">
       <Header title="Settings" />
+      <div className="p-6 max-w-2xl space-y-4">
         <Suspense fallback={<div className="h-40 bg-gray-100 rounded-lg animate-pulse" />}>
           <GmailIntegration />
         </Suspense>
