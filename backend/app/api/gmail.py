@@ -27,5 +27,14 @@ async def gmail_status():
 
 @router.post("/poll")
 async def trigger_poll():
-    await poll_gmail_for_invoices()
-    return {"message": "Gmail poll triggered"}
+    from fastapi import HTTPException
+    from googleapiclient.errors import HttpError
+    try:
+        await poll_gmail_for_invoices()
+        return {"message": "Gmail poll triggered successfully"}
+    except HttpError as e:
+        import json
+        error_details = json.loads(e.content).get('error', {}).get('message', str(e))
+        raise HTTPException(status_code=400, detail=f"Google API Error: {error_details}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
