@@ -62,6 +62,8 @@ export const api = {
       list: (status?: string) => request<any>(`/api/erp/purchase-orders${status ? `?status=${status}` : ""}`),
       create: (data: any) =>
         request<any>("/api/erp/purchase-orders", { method: "POST", body: JSON.stringify(data) }),
+      update: (id: string, data: any) =>
+        request<any>(`/api/erp/purchase-orders/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
       get: (id: string) => request<any>(`/api/erp/purchase-orders/${id}`),
     },
     grns: {

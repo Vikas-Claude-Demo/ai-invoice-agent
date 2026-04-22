@@ -52,6 +52,15 @@ async def create_purchase_order(body: PurchaseOrderCreate):
     return result.data[0]
 
 
+@router.patch("/purchase-orders/{po_id}")
+async def update_purchase_order(po_id: str, body: dict):
+    db = get_supabase()
+    result = db.table("purchase_orders").update(body).eq("id", po_id).execute()
+    if not result.data:
+        raise HTTPException(404, "PO not found")
+    return result.data[0]
+
+
 @router.get("/purchase-orders/{po_id}")
 async def get_purchase_order(po_id: str):
     db = get_supabase()

@@ -21,6 +21,7 @@ interface LineItem { description: string; qty: string; rate: string; amount: str
 export default function PurchaseOrdersPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [vendorId, setVendorId] = useState("");
   const [poNumber, setPoNumber] = useState("");
   const [poDate, setPoDate] = useState("");
@@ -50,21 +51,42 @@ export default function PurchaseOrdersPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const create = useMutation({
-    mutationFn: () => api.erp.purchaseOrders.create({
-      vendor_id: vendorId,
-      po_number: poNumber,
-      po_date: poDate,
-      line_items: lineItems.map(li => ({ description: li.description, qty: +li.qty, rate: +li.rate, amount: +li.qty * +li.rate })),
-      total_amount: lineItems.reduce((s, li) => s + +li.qty * +li.rate, 0),
-    }),
+  const savePO = useMutation({
+    mutationFn: () => {
+      const data = {
+        vendor_id: vendorId,
+        po_number: poNumber,
+        po_date: poDate,
+        line_items: lineItems.map(li => ({ description: li.description, qty: +li.qty, rate: +li.rate, amount: +li.qty * +li.rate })),
+        total_amount: lineItems.reduce((s, li) => s + +li.qty * +li.rate, 0),
+      };
+      return editId ? api.erp.purchaseOrders.update(editId, data) : api.erp.purchaseOrders.create(data);
+    },
     onSuccess: () => {
-      toast.success("Purchase order created");
+      toast.success(editId ? "Purchase order updated" : "Purchase order created");
       qc.invalidateQueries({ queryKey: ["pos"] });
       setOpen(false);
+      resetForm();
     },
     onError: (e: any) => toast.error(e.message),
   });
+
+  function resetForm() {
+    setEditId(null);
+    setVendorId("");
+    setPoNumber("");
+    setPoDate("");
+    setLineItems([{ description: "", qty: "", rate: "", amount: "" }]);
+  }
+
+  function handleEdit(po: PurchaseOrder) {
+    setEditId(po.id);
+    setVendorId(po.vendor_id);
+    setPoNumber(po.po_number);
+    setPoDate(po.po_date?.split("T")[0] || "");
+    setLineItems(po.line_items.map(li => ({ description: li.description, qty: String(li.qty), rate: String(li.rate), amount: String(li.amount) })));
+    setOpen(true);
+  }
 
   function updateLI(i: number, field: keyof LineItem, val: string) {
     setLineItems(prev => prev.map((li, idx) => idx === i ? { ...li, [field]: val, amount: field === "qty" || field === "rate" ? String(+(field === "qty" ? val : li.qty) * +(field === "rate" ? val : li.rate)) : li.amount } : li));
@@ -77,7 +99,7 @@ export default function PurchaseOrdersPage() {
       <Header title="Purchase Orders" />
       <div className="p-6 space-y-4">
         <div className="flex justify-end">
-          <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-1" /> New PO</Button>
+          <Button onClick={() => { resetForm(); setOpen(true); }}><Plus className="h-4 w-4 mr-1" /> New PO</Button>
         </div>
 
         <Card>
@@ -88,6 +110,7 @@ export default function PurchaseOrdersPage() {
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Vendor</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Date</th>
                 <th className="text-right px-4 py-3 font-medium text-gray-600">Amount</th>
+                <th className="text-center px-4 py-3 font-medium text-gray-600">Status</th>
                 <th className="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
               </tr></thead>
               <tbody>
@@ -112,7 +135,15 @@ export default function PurchaseOrdersPage() {
                       </Badge>
                     </td>
                     <td className="px-4 py-4 text-right">
-                      <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleEdit(po)}
+                          className="h-7 px-3 text-[11px] font-bold text-gray-600 hover:bg-gray-100"
+                        >
+                          View/Edit
+                        </Button>
                         <Button 
                           variant="outline" 
                           size="sm" 
@@ -138,11 +169,11 @@ export default function PurchaseOrdersPage() {
       </div>
 
       {/* Create PO Dialog */}
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(val) => { setOpen(val); if (!val) resetForm(); }}>
         <DialogContent className="sm:max-w-4xl w-[95vw] max-h-[95vh] overflow-y-auto p-0 gap-0 border-none shadow-2xl">
           <div className="p-6 border-b bg-white sticky top-0 z-20">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-gray-900">Create New Purchase Order</DialogTitle>
+              <DialogTitle className="text-2xl font-bold text-gray-900">{editId ? "Update" : "Create New"} Purchase Order</DialogTitle>
               <p className="text-sm text-gray-500">Master record for procurement tracking and automated matching.</p>
             </DialogHeader>
           </div>
@@ -155,7 +186,7 @@ export default function PurchaseOrdersPage() {
                 <Select value={vendorId} onValueChange={(v: string | null) => {
                   setVendorId(v ?? "");
                   // Auto-generate PO number if empty
-                  if (!poNumber) {
+                  if (!poNumber && !editId) {
                     const prefix = localStorage.getItem("po_prefix") || "PO-" + new Date().getFullYear() + "-";
                     const count = (pos.length + 1).toString().padStart(3, "0");
                     setPoNumber(prefix + count);
@@ -285,15 +316,15 @@ export default function PurchaseOrdersPage() {
           </div>
 
           <div className="p-6 bg-white border-t flex justify-end gap-4 sticky bottom-0 z-20">
-            <Button variant="ghost" onClick={() => setOpen(false)} className="px-8 font-semibold text-gray-500 hover:text-gray-900">
+            <Button variant="ghost" onClick={() => { setOpen(false); resetForm(); }} className="px-8 font-semibold text-gray-500 hover:text-gray-900">
               Discard Draft
             </Button>
             <Button 
               className="px-10 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-xl shadow-blue-200 h-12 rounded-xl transition-all active:scale-95"
-              disabled={!vendorId || !poNumber || create.isPending} 
-              onClick={() => create.mutate()}
+              disabled={!vendorId || !poNumber || savePO.isPending} 
+              onClick={() => savePO.mutate()}
             >
-              {create.isPending ? "Syncing to Ledger..." : "Confirm & Create PO"}
+              {savePO.isPending ? "Syncing to Ledger..." : (editId ? "Update Purchase Order" : "Confirm & Create PO")}
             </Button>
           </div>
         </DialogContent>
