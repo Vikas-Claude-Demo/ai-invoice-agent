@@ -26,8 +26,29 @@ export default function PurchaseOrdersPage() {
   const [poDate, setPoDate] = useState("");
   const [lineItems, setLineItems] = useState<LineItem[]>([{ description: "", qty: "", rate: "", amount: "" }]);
 
+  // GRN states
+  const [grnOpen, setGrnOpen] = useState(false);
+  const [grnPoId, setGrnPoId] = useState("");
+  const [grnNumber, setGrnNumber] = useState("");
+
   const { data: pos = [], isLoading } = useQuery<PurchaseOrder[]>({ queryKey: ["pos"], queryFn: () => api.erp.purchaseOrders.list() });
   const { data: vendors = [] } = useQuery<Vendor[]>({ queryKey: ["vendors"], queryFn: () => api.erp.vendors.list() });
+
+  const createGRN = useMutation({
+    mutationFn: () => api.erp.grns.create({ 
+      po_id: grnPoId, 
+      grn_number: grnNumber, 
+      received_date: new Date().toISOString().split("T")[0], 
+      items_received: [], 
+      notes: "Auto-generated from PO" 
+    }),
+    onSuccess: () => {
+      toast.success("Goods received successfully");
+      qc.invalidateQueries({ queryKey: ["pos"] });
+      setGrnOpen(false);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   const create = useMutation({
     mutationFn: () => api.erp.purchaseOrders.create({
@@ -67,20 +88,45 @@ export default function PurchaseOrdersPage() {
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Vendor</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Date</th>
                 <th className="text-right px-4 py-3 font-medium text-gray-600">Amount</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+                <th className="text-right px-4 py-3 font-medium text-gray-600 uppercase tracking-wider">Actions</th>
               </tr></thead>
               <tbody>
                 {isLoading ? (
-                  [...Array(3)].map((_, i) => <tr key={i} className="border-b"><td colSpan={5} className="px-4 py-3"><div className="h-4 bg-gray-100 animate-pulse rounded" /></td></tr>)
+                  [...Array(3)].map((_, i) => <tr key={i} className="border-b"><td colSpan={6} className="px-4 py-3"><div className="h-4 bg-gray-100 animate-pulse rounded" /></td></tr>)
                 ) : pos.length === 0 ? (
-                  <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">No purchase orders yet</td></tr>
+                  <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400 font-medium">No purchase orders found in the system.</td></tr>
                 ) : pos.map((po) => (
-                  <tr key={po.id} className="border-b hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium">{po.po_number}</td>
-                    <td className="px-4 py-3 text-gray-600">{po.vendors?.name ?? "—"}</td>
-                    <td className="px-4 py-3 text-gray-600">{po.po_date ? format(new Date(po.po_date), "dd MMM yyyy") : "—"}</td>
-                    <td className="px-4 py-3 text-right font-medium">₹{po.total_amount?.toLocaleString()}</td>
-                    <td className="px-4 py-3"><Badge className={`${statusColor[po.status]} border-0`}>{po.status}</Badge></td>
+                  <tr key={po.id} className="border-b hover:bg-gray-50 transition-colors group">
+                    <td className="px-4 py-4 font-bold text-gray-900">{po.po_number}</td>
+                    <td className="px-4 py-4 text-gray-700">
+                      <div className="flex flex-col">
+                        <span className="font-semibold">{po.vendors?.name ?? "—"}</span>
+                        <span className="text-[10px] text-gray-400">{po.vendors?.email}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-gray-600">{po.po_date ? format(new Date(po.po_date), "dd MMM yyyy") : "—"}</td>
+                    <td className="px-4 py-4 text-right font-black text-gray-900">₹{po.total_amount?.toLocaleString()}</td>
+                    <td className="px-4 py-4">
+                      <Badge className={`${statusColor[po.status]} border-0 px-3 py-1 rounded-full text-[10px] font-bold uppercase`}>
+                        {po.status}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        onClick={() => {
+                          setGrnPoId(po.id);
+                          setGrnOpen(true);
+                          const prefix = localStorage.getItem("grn_prefix") || "GRN-" + new Date().getFullYear() + "-";
+                          setGrnNumber(prefix + (Math.floor(Math.random() * 9000) + 1000));
+                        }} 
+                        className="h-8 bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white border-blue-100"
+                        disabled={po.status === "closed" || po.status === "cancelled"}
+                      >
+                        Receive Goods
+                      </Button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -89,6 +135,7 @@ export default function PurchaseOrdersPage() {
         </Card>
       </div>
 
+      {/* Create PO Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-4xl w-[95vw] max-h-[95vh] overflow-y-auto p-0 gap-0 border-none shadow-2xl">
           <div className="p-6 border-b bg-white sticky top-0 z-20">
@@ -245,6 +292,44 @@ export default function PurchaseOrdersPage() {
               onClick={() => create.mutate()}
             >
               {create.isPending ? "Syncing to Ledger..." : "Confirm & Create PO"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Direct Receive (GRN) Dialog */}
+      <Dialog open={grnOpen} onOpenChange={setGrnOpen}>
+        <DialogContent className="sm:max-w-2xl w-[95vw] p-0 border-none shadow-2xl">
+          <div className="p-6 border-b bg-white">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold">Receive Goods</DialogTitle>
+              <p className="text-xs text-gray-500">Creating Goods Receipt Note for {pos.find(p => p.id === grnPoId)?.po_number}</p>
+            </DialogHeader>
+          </div>
+          <div className="p-6 space-y-6 bg-gray-50/50">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">GRN Number *</Label>
+                <Input value={grnNumber} onChange={e => setGrnNumber(e.target.value)} className="bg-white border-gray-200 h-10 font-mono" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Received Date</Label>
+                <Input type="date" value={new Date().toISOString().split("T")[0]} className="bg-white border-gray-200 h-10" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Notes / Delivery Details</Label>
+              <Input placeholder="e.g. Received in good condition" className="bg-white border-gray-200 h-10" />
+            </div>
+          </div>
+          <div className="p-6 bg-white border-t flex justify-end gap-3">
+            <Button variant="ghost" onClick={() => setGrnOpen(false)}>Cancel</Button>
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
+              onClick={() => createGRN.mutate()}
+              disabled={createGRN.isPending}
+            >
+              {createGRN.isPending ? "Processing..." : "Confirm Receipt"}
             </Button>
           </div>
         </DialogContent>
