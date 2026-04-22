@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Eye, Mail, Upload, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
+import { formatCurrency } from "@/lib/utils";
 
 export default function InvoicesPage() {
   const [status, setStatus] = useState<string>("all");
@@ -94,7 +95,7 @@ export default function InvoicesPage() {
                       <td className="px-4 py-3 text-gray-600">{inv.vendors?.name ?? inv.extracted_data?.vendor_name ?? "—"}</td>
                       <td className="px-4 py-3 text-gray-600">{inv.po_number ?? "—"}</td>
                       <td className="px-4 py-3 text-right font-medium">
-                        {inv.total ? `₹${inv.total.toLocaleString()}` : "—"}
+                        {formatCurrency(inv.total, inv.extracted_data?.currency)}
                       </td>
                       <td className="px-4 py-3">
                         {inv.source === "email" ? (

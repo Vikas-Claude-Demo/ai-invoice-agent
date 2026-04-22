@@ -50,6 +50,7 @@ class ExtractedInvoiceData(BaseModel):
     subtotal: Optional[float] = None
     tax: Optional[float] = None
     total: Optional[float] = None
+    currency: Optional[str] = "INR"
     confidence_score: Optional[float] = None
     low_confidence_fields: List[str] = []
 

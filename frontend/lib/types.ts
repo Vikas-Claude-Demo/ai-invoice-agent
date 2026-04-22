@@ -27,6 +27,7 @@ export interface ExtractedData {
   subtotal?: number;
   tax?: number;
   total?: number;
+  currency?: string;
   confidence_score?: number;
   low_confidence_fields?: string[];
 }

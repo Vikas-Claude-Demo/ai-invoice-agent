@@ -59,12 +59,14 @@ Return a JSON object with EXACTLY this structure (no markdown, no explanation, j
   "subtotal": number or null,
   "tax": number or null,
   "total": number or null,
+  "currency": "string code like USD, INR, etc or null",
   "confidence_score": number between 0 and 1,
   "low_confidence_fields": ["list of field names where you are less than 80% confident"]
 }
 
 Rules:
 - All monetary values must be plain numbers (no currency symbols, no commas)
+- Currency must be an ISO 4217 code (INR, USD, GBP, etc.) if detectable, else "INR"
 - If a field is not found or unclear, use null
 - confidence_score reflects overall extraction quality (0.0 = very uncertain, 1.0 = very certain)
 - Be precise — extract exact values shown on the invoice

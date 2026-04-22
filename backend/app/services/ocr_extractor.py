@@ -177,6 +177,12 @@ def extract_with_ocr(file_bytes: bytes, filename: str) -> ExtractedInvoiceData:
         r"(?:total)[:\s]*[\₹$]?\s*([\d,]+(?:\.\d{2})?)",
     ])
 
+    currency = "INR"
+    if "$" in text or "USD" in text: currency = "USD"
+    elif "£" in text or "GBP" in text: currency = "GBP"
+    elif "€" in text or "EUR" in text: currency = "EUR"
+    elif "₹" in text or "INR" in text: currency = "INR"
+
     line_items = _extract_line_items(text)
 
     # Build confidence based on how many fields we found
@@ -199,6 +205,7 @@ def extract_with_ocr(file_bytes: bytes, filename: str) -> ExtractedInvoiceData:
         subtotal=subtotal,
         tax=tax,
         total=total,
+        currency=currency,
         confidence_score=confidence,
         low_confidence_fields=low_conf_fields,
     )

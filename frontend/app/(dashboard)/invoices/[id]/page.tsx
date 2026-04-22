@@ -14,6 +14,7 @@ import { ArrowLeft, ExternalLink, AlertTriangle, Save, Brain, Sparkles, CheckCir
 import Link from "next/link";
 import { use, useState, useEffect } from "react";
 import { toast } from "sonner";
+import { formatCurrency } from "@/lib/utils";
 
 export default function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -39,6 +40,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
         subtotal: invoice.extracted_data.subtotal?.toString() || "",
         tax: invoice.extracted_data.tax?.toString() || "",
         total: invoice.extracted_data.total?.toString() || invoice.total?.toString() || "",
+        currency: invoice.extracted_data.currency || "INR",
       });
     } else if (invoice) {
       // Fallback if no extracted data yet
@@ -50,6 +52,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
         subtotal: "",
         tax: "",
         total: invoice.total?.toString() || "",
+        currency: "INR",
       });
     }
   }, [invoice]);
@@ -78,6 +81,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
       subtotal: formData.subtotal ? parseFloat(formData.subtotal) : null,
       tax: formData.tax ? parseFloat(formData.tax) : null,
       total: formData.total ? parseFloat(formData.total) : null,
+      currency: formData.currency || "INR",
     };
     
     updateMutation.mutate({ data: updated, learn: learnFromThis });
@@ -233,13 +237,22 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
               <section className="space-y-6 pt-8 border-t">
                 <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Financial Totals</h3>
-                <div className="grid grid-cols-3 gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Currency</Label>
+                    <Input 
+                      value={formData.currency} 
+                      onChange={e => setFormData({...formData, currency: e.target.value.toUpperCase()})}
+                      className="bg-gray-50/50 border-gray-100 font-black text-gray-700 uppercase"
+                      placeholder="INR, USD..."
+                    />
+                  </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Subtotal</Label>
                     <Input 
                       value={formData.subtotal} 
                       onChange={e => setFormData({...formData, subtotal: e.target.value})}
-                      className="bg-gray-50/50 border-gray-100 font-black text-gray-700"
+                      className="bg-gray-50/50 border-gray-100 font-bold text-gray-700"
                     />
                   </div>
                   <div className="space-y-2">
@@ -247,11 +260,14 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                     <Input 
                       value={formData.tax} 
                       onChange={e => setFormData({...formData, tax: e.target.value})}
-                      className="bg-gray-50/50 border-gray-100 font-black text-gray-700"
+                      className="bg-gray-50/50 border-gray-100 font-bold text-gray-700"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Grand Total</Label>
+                    <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center justify-between">
+                      Grand Total
+                      <span className="text-blue-600 ml-2">{formData.currency}</span>
+                    </Label>
                     <Input 
                       value={formData.total} 
                       onChange={e => setFormData({...formData, total: e.target.value})}
