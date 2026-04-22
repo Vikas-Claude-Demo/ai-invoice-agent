@@ -15,7 +15,14 @@ const API_URL = getApiUrl();
 console.log(">>> INVOKING API FROM:", API_URL);
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
+  // Ensure we use the correct base URL
+  const baseUrl = API_URL.endsWith("/") ? API_URL.slice(0, -1) : API_URL;
+  // Ensure path doesn't have a trailing slash before query params to avoid Vercel redirects
+  const cleanPath = path.replace(/\/(\?|$)/, "$1");
+  
+  const url = `${baseUrl}${cleanPath}`;
+  
+  const res = await fetch(url, {
     headers: { "Content-Type": "application/json", ...options?.headers },
     ...options,
   });
@@ -29,7 +36,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 export const api = {
   invoices: {
     list: (status?: string, page = 1) =>
-      request<any>(`/api/invoices/?${status ? `status=${status}&` : ""}page=${page}`),
+      request<any>(`/api/invoices?${status ? `status=${status}&` : ""}page=${page}`),
     get: (id: string) => request<any>(`/api/invoices/${id}`),
     upload: (file: File) => {
       const form = new FormData();
@@ -40,7 +47,7 @@ export const api = {
   },
   exceptions: {
     list: (status = "open", page = 1) =>
-      request<any>(`/api/exceptions/?status=${status}&page=${page}`),
+      request<any>(`/api/exceptions?status=${status}&page=${page}`),
     resolve: (id: string, body: { action: string; notes?: string; edited_data?: any }) =>
       request<any>(`/api/exceptions/${id}/resolve`, { method: "POST", body: JSON.stringify(body) }),
   },
