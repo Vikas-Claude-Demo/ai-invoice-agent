@@ -151,7 +151,7 @@ async def _process_email_message(msg: dict, service, db):
             continue
 
         storage_path = f"invoices/email_{msg['id']}_{filename}"
-        db.storage.from_("invoices").upload(storage_path, file_bytes)
+        db.storage.from_("invoices").upload(storage_path, file_bytes, {"content-type": mime})
         file_url = db.storage.from_("invoices").get_public_url(storage_path)
 
         invoice_res = db.table("invoices").insert({
