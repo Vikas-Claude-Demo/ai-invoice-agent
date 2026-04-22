@@ -90,39 +90,89 @@ export default function PurchaseOrdersPage() {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader><DialogTitle>Create Purchase Order</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label>Vendor *</Label>
-                <Select value={vendorId} onValueChange={(v: string | null) => setVendorId(v ?? "")}>
-                  <SelectTrigger><SelectValue placeholder="Select vendor" /></SelectTrigger>
-                  <SelectContent>{vendors.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1"><Label>PO Number *</Label><Input value={poNumber} onChange={e => setPoNumber(e.target.value)} /></div>
-              <div className="space-y-1"><Label>PO Date</Label><Input type="date" value={poDate} onChange={e => setPoDate(e.target.value)} /></div>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Create New Purchase Order</DialogTitle>
+            <p className="text-sm text-gray-500">Enter the details for the new purchase order below.</p>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-3 gap-6 py-4">
+            <div className="space-y-2">
+              <Label className="text-gray-700 font-semibold">Vendor *</Label>
+              <Select value={vendorId} onValueChange={(v: string | null) => setVendorId(v ?? "")}>
+                <SelectTrigger className="bg-white"><SelectValue placeholder="Select vendor" /></SelectTrigger>
+                <SelectContent>{vendors.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}</SelectContent>
+              </Select>
             </div>
-            <div>
-              <div className="flex justify-between items-center mb-2"><Label>Line Items</Label><Button variant="outline" size="sm" onClick={() => setLineItems(p => [...p, { description: "", qty: "", rate: "", amount: "" }])}><Plus className="h-3 w-3 mr-1" />Add</Button></div>
-              <div className="space-y-2">
+            <div className="space-y-2">
+              <Label className="text-gray-700 font-semibold">PO Number *</Label>
+              <Input value={poNumber} onChange={e => setPoNumber(e.target.value)} placeholder="e.g. PO-2024-001" className="bg-white" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-gray-700 font-semibold">PO Date</Label>
+              <Input type="date" value={poDate} onChange={e => setPoDate(e.target.value)} className="bg-white" />
+            </div>
+          </div>
+
+          <div className="mt-6 border-t pt-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-gray-800">Line Items</h3>
+              <Button variant="outline" size="sm" onClick={() => setLineItems(p => [...p, { description: "", qty: "", rate: "", amount: "" }])} className="border-blue-200 text-blue-600 hover:bg-blue-50">
+                <Plus className="h-4 w-4 mr-1" /> Add Item
+              </Button>
+            </div>
+            
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+              <div className="grid grid-cols-12 gap-4 mb-2 px-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <div className="col-span-5">Description</div>
+                <div className="col-span-2 text-center">Quantity</div>
+                <div className="col-span-2 text-center">Rate (₹)</div>
+                <div className="col-span-2 text-right">Amount</div>
+                <div className="col-span-1"></div>
+              </div>
+              
+              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
                 {lineItems.map((li, i) => (
-                  <div key={i} className="grid grid-cols-12 gap-2 items-center">
-                    <Input className="col-span-5" placeholder="Description" value={li.description} onChange={e => updateLI(i, "description", e.target.value)} />
-                    <Input className="col-span-2" placeholder="Qty" type="number" value={li.qty} onChange={e => updateLI(i, "qty", e.target.value)} />
-                    <Input className="col-span-2" placeholder="Rate" type="number" value={li.rate} onChange={e => updateLI(i, "rate", e.target.value)} />
-                    <Input className="col-span-2" placeholder="Amount" readOnly value={li.amount} />
-                    <Button variant="ghost" size="icon" className="col-span-1" onClick={() => setLineItems(p => p.filter((_, j) => j !== i))} disabled={lineItems.length === 1}><Trash2 className="h-4 w-4 text-red-400" /></Button>
+                  <div key={i} className="grid grid-cols-12 gap-4 items-center bg-white p-2 rounded-lg border border-gray-200 shadow-sm transition-all hover:border-blue-200">
+                    <div className="col-span-5">
+                      <Input className="border-0 shadow-none focus-visible:ring-0 h-8" placeholder="Item description..." value={li.description} onChange={e => updateLI(i, "description", e.target.value)} />
+                    </div>
+                    <div className="col-span-2">
+                      <Input className="border-0 shadow-none focus-visible:ring-0 h-8 text-center" type="number" value={li.qty} onChange={e => updateLI(i, "qty", e.target.value)} />
+                    </div>
+                    <div className="col-span-2">
+                      <Input className="border-0 shadow-none focus-visible:ring-0 h-8 text-center" type="number" value={li.rate} onChange={e => updateLI(i, "rate", e.target.value)} />
+                    </div>
+                    <div className="col-span-2 text-right py-1.5 font-medium text-gray-700">
+                      ₹{(+li.qty * +li.rate || 0).toLocaleString()}
+                    </div>
+                    <div className="col-span-1 flex justify-end">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-50" onClick={() => setLineItems(p => p.filter((_, j) => j !== i))} disabled={lineItems.length === 1}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
-              <div className="text-right mt-2 font-semibold">Total: ₹{lineItems.reduce((s, li) => s + +li.qty * +li.rate || 0, 0).toLocaleString()}</div>
+              
+              <div className="mt-6 flex justify-end border-t border-gray-200 pt-4">
+                <div className="text-right">
+                  <div className="text-sm text-gray-500">Grand Total</div>
+                  <div className="text-3xl font-bold text-blue-600">₹{lineItems.reduce((s, li) => s + +li.qty * +li.rate || 0, 0).toLocaleString()}</div>
+                </div>
+              </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button disabled={!vendorId || !poNumber || create.isPending} onClick={() => create.mutate()}>{create.isPending ? "Creating..." : "Create PO"}</Button>
+
+          <DialogFooter className="mt-8 gap-3">
+            <Button variant="ghost" onClick={() => setOpen(false)} className="px-8">Cancel</Button>
+            <Button 
+              className="px-8 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-200"
+              disabled={!vendorId || !poNumber || create.isPending} 
+              onClick={() => create.mutate()}
+            >
+              {create.isPending ? "Creating..." : "Confirm & Create PO"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
